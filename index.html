@@ -3,159 +3,200 @@
 <head>
 <meta charset=utf-8 />
 <meta name=viewport content=width=device-width,initial-scale=1 />
-<title>Beep Panel</title>
+<title>Sound Panel</title>
+
 <style>
 :root{
   --bg:#0f172a;
-  --btn:#ef4444;
-  --btn2:#3b82f6;
-  --btn3:#10b981;
-  --btn4:#f59e0b;
-  --btn5:#8b5cf6;
-  --btn6:#ec4899;
+  --panel:#1e293b;
+  --tab:#334155;
+  --tab-active:#475569;
+  --btn:#4f46e5;
 }
 html,body{
   height:100%;
   margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial;
-}
-body{
-  display:grid;
-  place-items:center;
-  background:linear-gradient(180deg,#071029 0%, #0f172a 100%);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:var(--bg);
   color:#fff;
 }
-.center{
-  text-align:center;
+.topbar{
+  width:100%;
+  background:var(--tab);
+  padding:10px;
+  display:flex;
+  gap:10px;
+  box-sizing:border-box;
 }
-.panel{
+.tab{
+  padding:8px 14px;
+  background:var(--tab);
+  border-radius:6px;
+  cursor:pointer;
+  user-select:none;
+}
+.tab.active{
+  background:var(--tab-active);
+  font-weight:700;
+}
+.page{
+  display:none;
+  padding:20px;
+  display:none;
+}
+.page.active{
+  display:block;
+}
+.grid{
   display:flex;
   flex-wrap:wrap;
+  gap:14px;
   justify-content:center;
-  gap:16px;
-  max-width:600px;
+  margin-top:20px;
 }
-.beep-btn{
-  --size:130px;
-  width:var(--size);
-  height:var(--size);
-  border-radius:20px;
+.btn{
+  width:120px;
+  height:120px;
+  border-radius:16px;
+  background:var(--btn);
   border:0;
-  outline:0;
-  background:#ef4444;
+  color:white;
   font-size:1rem;
   font-weight:700;
-  color:white;
   cursor:pointer;
   display:grid;
   place-items:center;
   user-select:none;
-  touch-action:manipulation;
-  transition:transform .06s, filter .06s;
-  -webkit-tap-highlight-color:transparent;
   box-shadow:0 6px 20px rgba(0,0,0,.35);
+  transition:transform .06s, filter .06s;
 }
-.beep-btn:active{
-  transform:scale(.93);
+.btn:active{
+  transform:scale(.92);
   filter:brightness(.92);
 }
-footer{
+#censorBox{
   position:fixed;
-  left:12px;
-  bottom:8px;
-  font-size:.78rem;
-  opacity:.65;
+  right:20px;
+  bottom:20px;
 }
 </style>
 </head>
 
 <body>
-<main class=center>
-  <div class=panel>
-    <button id=curseBeep class=beep-btn style=background:var(--btn)>Censor</button>
-    <button id=simpleBeep class=beep-btn style=background:var(--btn2)>Beep</button>
-    <button id=whistle class=beep-btn style=background:var(--btn3)>Whistle</button>
-    <button id=laser class=beep-btn style=background:var(--btn4)>Laser</button>
-    <button id=errorTone class=beep-btn style=background:var(--btn5)>Error</button>
-    <button id=clickTone class=beep-btn style=background:var(--btn6)>Click</button>
+
+<div class=topbar>
+  <div id=tabSounds class="tab active">sounds</div>
+  <div id=tabEffects class=tab>effects</div>
+</div>
+
+<div id=pageSounds class="page active">
+  <div class=grid id=soundGrid></div>
+</div>
+
+<div id=pageEffects class=page>
+  <div id=censorBox>
+    <button id=censorBtn class=btn>Censor</button>
   </div>
-</main>
+</div>
 
-<footer>Beep Panel Demo</footer>
-
-<audio id=curseAudio src=https://www.soundjay.com/button/beep-07.mp3 preload=auto></audio>
+<audio id=censorSound src=https://www.soundjay.com/button/beep-07.mp3 preload=auto></audio>
 
 <script>
-(function(){
-  const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  const curseAudio = document.getElementById("curseAudio");
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+let holdOsc = null;
 
-  function playCustomAudio(a){
-    a.currentTime=0;
-    a.play();
+function startOsc(freq,type){
+  holdOsc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  holdOsc.type = type;
+  holdOsc.frequency.value = freq;
+  g.gain.value = 0.9;
+  holdOsc.connect(g);
+  g.connect(audioCtx.destination);
+  holdOsc.start();
+}
+
+function stopOsc(){
+  if(holdOsc){
+    holdOsc.stop();
+    holdOsc.disconnect();
+    holdOsc = null;
   }
+}
 
-  function osc(freqStart,freqEnd,type,duration){
-    const now = audioCtx.currentTime;
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-
-    o.type = type;
-    o.frequency.setValueAtTime(freqStart,now);
-    o.frequency.linearRampToValueAtTime(freqEnd,now+duration);
-
-    g.gain.setValueAtTime(1,now);
-    g.gain.exponentialRampToValueAtTime(0.0001,now+duration);
-
-    o.connect(g);
-    g.connect(audioCtx.destination);
-
-    o.start(now);
-    o.stop(now+duration);
+function playSound(typeIndex){
+  switch(typeIndex){
+    case 1: startOsc(400,"sine"); break;
+    case 2: startOsc(600,"triangle"); break;
+    case 3: startOsc(800,"square"); break;
+    case 4: startOsc(1200,"sine"); break;
+    case 5: startOsc(250,"triangle"); break;
+    case 6: startOsc(1500,"sine"); break;
+    case 7: startOsc(1800,"square"); break;
+    case 8: startOsc(300,"sine"); break;
+    case 9: startOsc(1000,"triangle"); break;
+    case 10: startOsc(2200,"sine"); break;
+    case 11: startOsc(90,"square"); break;
+    case 12: startOsc(1300,"sine"); break;
+    case 13: startOsc(700,"triangle"); break;
+    case 14: startOsc(1600,"square"); break;
+    case 15: startOsc(940,"sine"); break;
+    case 16: startOsc(500,"triangle"); break;
   }
+}
 
-  function trigger(id){
-    switch(id){
-      case "curseBeep":
-        playCustomAudio(curseAudio);
-        break;
-      case "simpleBeep":
-        osc(800,800,"sine",0.15);
-        break;
-      case "whistle":
-        osc(1500,2600,"sine",0.4);
-        break;
-      case "laser":
-        osc(2200,200,"sine",0.25);
-        break;
-      case "errorTone":
-        osc(200,50,"square",0.25);
-        break;
-      case "clickTone":
-        osc(3000,500,"triangle",0.07);
-        break;
-    }
-  }
+const grid = document.getElementById("soundGrid");
 
-  const ids=[
-    "curseBeep","simpleBeep","whistle",
-    "laser","errorTone","clickTone"
-  ];
+for(let i=1;i<=16;i++){
+  const b = document.createElement("button");
+  b.className="btn";
+  b.textContent="Sound "+i;
+  b.addEventListener("mousedown",()=>playSound(i));
+  b.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    playSound(i);
+  },{passive:false});
+  b.addEventListener("mouseup",stopOsc);
+  b.addEventListener("mouseleave",stopOsc);
+  b.addEventListener("touchend",stopOsc);
+  grid.appendChild(b);
+}
 
-  ids.forEach(id=>{
-    const b=document.getElementById(id);
-    b.addEventListener("click",()=>trigger(id));
-    b.addEventListener("touchstart",e=>{
-      e.preventDefault();
-      trigger(id);
-    },{passive:false});
-  });
+const censorBtn=document.getElementById("censorBtn");
+const censorSound=document.getElementById("censorSound");
 
-  document.addEventListener("click",function once(){
-    if(audioCtx.state==="suspended") audioCtx.resume();
-    document.removeEventListener("click",once);
-  });
-})();
+censorBtn.addEventListener("mousedown",()=>{
+  censorSound.currentTime=0;
+  censorSound.play();
+});
+censorBtn.addEventListener("touchstart",e=>{
+  e.preventDefault();
+  censorSound.currentTime=0;
+  censorSound.play();
+},{passive:false});
+
+const tabSounds=document.getElementById("tabSounds");
+const tabEffects=document.getElementById("tabEffects");
+const pageSounds=document.getElementById("pageSounds");
+const pageEffects=document.getElementById("pageEffects");
+
+tabSounds.onclick=()=>{
+  tabSounds.classList.add("active");
+  tabEffects.classList.remove("active");
+  pageSounds.classList.add("active");
+  pageEffects.classList.remove("active");
+};
+tabEffects.onclick=()=>{
+  tabEffects.classList.add("active");
+  tabSounds.classList.remove("active");
+  pageEffects.classList.add("active");
+  pageSounds.classList.remove("active");
+};
+
+document.addEventListener("click",function once(){
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  document.removeEventListener("click",once);
+});
 </script>
 
 </body>
