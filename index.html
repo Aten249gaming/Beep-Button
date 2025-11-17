@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Beep Button</title>
+  <style>
+    :root{--bg:#0f172a;--btn:#ef4444;--btn-shadow:rgba(239,68,68,.25)}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{display:grid;place-items:center;background:linear-gradient(180deg,#071029 0%, #0f172a 100%);color:#fff}
+    .center{
+      text-align:center;
+    }
+    .beep-btn{
+      --size:180px;
+      width:var(--size);height:var(--size);
+      border-radius:50%;border:0;outline:0;
+      background:linear-gradient(180deg,var(--btn) 0%,#dc2626 100%);
+      box-shadow:0 10px 30px var(--btn-shadow),0 2px 0 rgba(0,0,0,.25) inset;
+      font-size:1.1rem;font-weight:700;color:white;cursor:pointer;
+      display:inline-grid;place-items:center;user-select:none;touch-action:manipulation;
+      transition:transform .08s ease,box-shadow .08s ease,filter .08s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .beep-btn:active{transform:translateY(3px) scale(.995);filter:brightness(.96);}
+    .beep-btn[aria-pressed="true"]{box-shadow:0 6px 18px rgba(239,68,68,.35);transform:scale(.99);}
+    .hint{margin-top:18px;opacity:.85;font-size:.9rem}
+    footer{position:fixed;left:12px;bottom:8px;font-size:.78rem;opacity:.65}
+  </style>
+</head>
+<body>
+  <main class="center">
+    <button id="beep" class="beep-btn" aria-pressed="false" aria-label="Play beep sound">
+      Press me
+    </button>
+    <div class="hint">Click or press <kbd>Space</kbd> / <kbd>Enter</kbd></div>
+  </main>
+  <footer>Single-file demo — copy to GitHub Pages to host</footer>
+
+  <script>
+    // Censor-style beep using Web Audio API (synthesized — no external files)
+    (function(){
+      const btn = document.getElementById('beep');
+      let audioCtx;
+      let playing = false;
+
+      function ensureAudio(){
+        if(!audioCtx){
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioCtx;
+      }
+
+      function playCensorBeep(){
+        if(playing) return; // prevent overlapping
+        const ctx = ensureAudio();
+        const now = ctx.currentTime;
+        playing = true;
+        btn.setAttribute('aria-pressed','true');
+
+        // Oscillator (square) for sharp beep character
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        // small frequency sweep for more natural sound
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(2200, now + 0.08);
+
+        // Gain envelope (quick attack, short decay)
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+        // Optional subtle noise through a bandpass to make it more 'censor-like'
+        const bufferSize = 0.1 * ctx.sampleRate; // 0.1s of noise
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1)*0.6;
+        const noiseSrc = ctx.createBufferSource();
+        noiseSrc.buffer = noiseBuffer;
+
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 1800;
+        noiseFilter.Q.value = 1;
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.0, now);
+        noiseGain.gain.linearRampToValueAtTime(0.35, now + 0.01);
+        noiseGain.gain.linearRampToValueAtTime(0.0, now + 0.12);
+
+        // Mix osc and noise
+        osc.connect(g);
+        g.connect(ctx.destination);
+
+        noiseSrc.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        osc.start(now);
+        noiseSrc.start(now);
+
+        // stop after short time
+        osc.stop(now + 0.16);
+        noiseSrc.stop(now + 0.16);
+
+        // cleanup and reset
+        setTimeout(()=>{
+          playing = false;
+          btn.setAttribute('aria-pressed','false');
+        }, 220);
+      }
+
+      // Button interactions
+      btn.addEventListener('click', (e)=>{
+        playCensorBeep();
+      });
+
+      // keyboard support
+      window.addEventListener('keydown', (e)=>{
+        if(e.code === 'Space' || e.code === 'Enter'){
+          // prevent page scrolling on space when focused on body
+          if(e.target === document.body) e.preventDefault();
+          playCensorBeep();
+        }
+      });
+
+      // touch: make it feel responsive on mobile
+      btn.addEventListener('touchstart', (e)=>{
+        // prevent double events
+        e.preventDefault();
+        playCensorBeep();
+      }, {passive:false});
+
+      // helpful hint: resume audio context if browsers require user gesture
+      document.addEventListener('click', function once(){
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        document.removeEventListener('click', once);
+      });
+
+    })();
+  </script>
+</body>
+</html>
