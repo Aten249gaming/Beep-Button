@@ -1,318 +1,1185 @@
 <!doctype html>
 <html lang='en'>
 <head>
-<meta charset='utf-8'>
+<meta charset='utf-8' />
 <meta name='viewport' content='width=device-width,initial-scale=1' />
-<title>Sound Engine</title>
-
+<title>Full Music Maker — Mini DAW</title>
 <style>
 :root{
-  --bg:#0f172a;
-  --btn:#ef4444;
-  --btn2:#3b82f6;
-  --fx:#10b981;
-  --bar:#1e293b;
-  --text:#fff;
+  --bg:#071029;
+  --panel:#0f172a;
+  --muted:#94a3b8;
+  --card:#0f172a;
+  --card-2:#0b1220;
+  --accent:#4f46e5;
+  --accent-2:#06b6d4;
+  --danger:#ef4444;
+  --glass: rgba(255,255,255,0.03);
 }
-html,body{
-  height:100%;
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-  background:var(--bg);
-  color:var(--text);
-  overflow:hidden;
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,var(--bg),#0f172a); color:#e6eef8; overflow:hidden}
+.topbar{
+  position:fixed;left:50%;transform:translateX(-50%);top:12px;
+  display:flex;gap:10px;padding:8px;border-radius:14px;background:var(--card-2);box-shadow:0 10px 30px rgba(2,6,23,.6);z-index:1400;
 }
-#tabs{
-  width:100%;
-  background:var(--bar);
-  padding:12px;
-  display:flex;
-  gap:12px;
-  border-radius:0 0 14px 14px;
-}
-.tab{
-  padding:8px 16px;
-  background:#334155;
-  border-radius:8px;
-  cursor:pointer;
-  user-select:none;
-}
-.tab.active{
-  background:#475569;
-}
-.screen{
-  display:none;
-  height:calc(100% - 70px);
-  overflow:auto;
-  padding:20px;
-}
-.screen.active{
-  display:block;
-}
-
-/* Sounds and Effects buttons */
-.sound-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-  gap:15px;
-}
-.btn{
-  padding:16px;
-  border-radius:12px;
-  background:var(--btn2);
-  text-align:center;
-  font-weight:700;
-  cursor:pointer;
-  user-select:none;
-}
-.btn:active{
-  filter:brightness(.85);
-}
-
-#effectBtn{
-  padding:20px;
-  border-radius:16px;
-  background:var(--fx);
-  width:160px;
-  font-weight:800;
-  text-align:center;
-  margin-bottom:15px;
-  cursor:pointer;
-}
-
-/* Music Maker */
-#makerCanvas{
-  position:relative;
-  width:2000px;
-  height:1400px;
-  background:#1a2234;
-  border-radius:16px;
-  overflow:visible;
-}
-
-.node{
-  position:absolute;
-  width:130px;
-  padding:12px;
-  background:#3b82f6;
-  border-radius:12px;
-  text-align:center;
+.topbar button{background:transparent;border:0;padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+.topbar button.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;font-weight:700}
+.container{display:grid;grid-template-columns:260px 1fr 320px;gap:12px;padding:84px 18px 18px;height:100vh;box-sizing:border-box}
+.left, .right{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,.5);overflow:auto}
+.left h3,.right h3{margin:6px 0 12px 0;color:var(--muted)}
+.palette-item{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:linear-gradient(180deg,#051022,#071228);margin-bottom:8px;cursor:grab}
+.palette-item button{background:var(--accent);border:0;color:white;padding:6px 8px;border-radius:8px;font-weight:700}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.small{font-size:13px;color:var(--muted)}
+.center{display:flex;align-items:center;justify-content:center}
+.canvas-wrap{position:relative;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); border-radius:12px; overflow:hidden; box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+.toolbar{display:flex;gap:8px;padding:10px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.canvas{
+  position:relative;width:100%;height:calc(100% - 48px);overflow:auto;background-size:56px 56px;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
   cursor:grab;
-  font-weight:700;
-  user-select:none;
 }
-.node:active{cursor:grabbing;}
-
-.line{
-  position:absolute;
-  height:4px;
-  background:#22d3ee;
-  transform-origin:0 0;
-  border-radius:4px;
+.node{
+  position:absolute;min-width:170px;border-radius:10px;padding:10px;background:linear-gradient(180deg,#f8fafc,#eef2ff);color:#071029;
+  box-shadow:0 12px 30px rgba(2,6,23,.45);user-select:none;touch-action:none;
 }
-
+.node .title{font-weight:800;margin-bottom:8px;font-size:14px}
+.node .meta{font-size:13px;color:#334155;margin-bottom:8px}
+.node .row{display:flex;gap:8px;align-items:center}
+.node button{border:0;padding:6px 8px;border-radius:8px;cursor:pointer}
+.playBtn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;font-weight:700}
+.holdBtn{background:#64748b;color:white}
+.delBtn{background:var(--danger);color:white}
+.connector{width:12px;height:12px;border-radius:50%;background:var(--danger);border:2px solid white;display:inline-block;margin-left:6px;cursor:pointer}
+.svg-links{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.inspector .field{margin-bottom:10px}
+.input,select{width:100%;padding:8px;border-radius:8px;border:0;background:var(--card-2);color:#fff}
+.footer-note{font-size:12px;color:var(--muted);margin-top:8px}
+.small-btn{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer}
+.row-sb{display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
 <body>
 
-<!-- Tabs -->
-<div id='tabs'>
-  <div class='tab active' data-tab='sounds'>Sounds</div>
-  <div class='tab' data-tab='effects'>Effects</div>
-  <div class='tab' data-tab='maker'>Music Maker</div>
+<!-- topbar -->
+<div class='topbar' aria-hidden='false'>
+  <button id='tabSounds' class='active'>Sounds</button>
+  <button id='tabEffects'>Effects</button>
+  <button id='tabMaker'>Music Maker</button>
+  <div style='width:16px'></div>
+  <button id='btnSave' title='Save project'>Save</button>
+  <button id='btnLoad' title='Load project'>Load</button>
+  <button id='btnExport' title='Export JSON'>Export</button>
+  <button id='btnImport' title='Import JSON'>Import</button>
+  <button id='btnRender' title='Render mixdown to WAV'>Render WAV</button>
+  <button id='btnClear' title='Clear canvas'>Clear</button>
 </div>
 
-<!-- Screens -->
-<div id='sounds' class='screen active'>
-  <div class='sound-grid' id='soundGrid'></div>
+<div class='container'>
+  <!-- left palette -->
+  <aside class='left' id='leftPane'>
+    <h3>Palette</h3>
+    <div class='controls'>
+      <button id='uploadSample' class='small-btn'>Upload Sample</button>
+      <button id='snapGrid' class='small-btn'>Snap to Grid</button>
+      <button id='zoomIn' class='small-btn'>Zoom +</button>
+      <button id='zoomOut' class='small-btn'>Zoom -</button>
+    </div>
+
+    <div id='paletteItems'>
+      <!-- palette items inserted here -->
+    </div>
+
+    <hr style='opacity:.06;margin:12px 0'>
+    <div class='small'>Drag items to the canvas. Click connector dot then another node to link. Right-click node to play from it. Hold node to sustain (if supported by node type).</div>
+  </aside>
+
+  <!-- center canvas -->
+  <section class='canvas-wrap'>
+    <div class='toolbar'>
+      <div class='row-sb' style='width:100%'>
+        <div>
+          <label class='small'>Grid</label>
+        </div>
+        <div>
+          <button id='addOsc' class='small-btn'>Add Osc</button>
+          <button id='addSample' class='small-btn'>Add Sample Player</button>
+          <button id='addGain' class='small-btn'>Add Gain</button>
+          <button id='addFilter' class='small-btn'>Add Filter</button>
+          <button id='addDelay' class='small-btn'>Add Delay</button>
+          <button id='addAdsr' class='small-btn'>Add ADSR</button>
+          <button id='addSeq' class='small-btn'>Add Sequencer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id='canvas' class='canvas'>
+      <svg class='svg-links' id='svgLinks'></svg>
+    </div>
+  </section>
+
+  <!-- right inspector -->
+  <aside class='right inspector' id='rightPane'>
+    <h3>Inspector</h3>
+    <div id='insContent'>
+      <div class='small'>No node selected</div>
+    </div>
+    <hr style='opacity:.06;margin:12px 0'>
+    <div class='field'>
+      <label class='small'>Project</label>
+      <input id='projectName' class='input' placeholder='Project name' />
+    </div>
+    <div class='field'>
+      <label class='small'>Censor</label>
+      <button id='censorPlay' class='small-btn'>Play curse_beep.mp3</button>
+      <div class='footer-note'>Put curse_beep.mp3 next to this file or change path in code</div>
+    </div>
+
+    <hr style='opacity:.06;margin:12px 0'>
+    <div class='small footer-note'>Tips: right-click a node to start play from it. Use connectors to wire nodes. Save JSON to keep projects.</div>
+  </aside>
 </div>
 
-<div id='effects' class='screen'>
-  <div id='effectBtn'>Censor</div>
-</div>
+<!-- hidden file input -->
+<input id='fileInput' type='file' accept='audio/*' style='display:none' />
 
-<div id='maker' class='screen'>
-  <div id='makerCanvas'></div>
-</div>
-
-<audio id='curseAudio' src='curse_beep.mp3' preload='auto'></audio>
+<!-- audio for censor -->
+<audio id='censorAudio' src='curse_beep.mp3' preload='auto'></audio>
 
 <script>
+/* ---------- Core WebAudio and Graph System (Full DAW Mini) ---------- */
 
-const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-let playing={};
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-/* Tab Switching */
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(a=>a.classList.remove('active'));
-    t.classList.add('active');
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById(t.dataset.tab).classList.add('active');
-  });
-});
+/* Storage for node data and connections */
+let NODE_ID = 0;
+const nodes = {}; // id -> nodeData
+const links = []; // {from, to}
+const domNodes = {}; // id -> dom element
+const nodeAudioState = {}; // runtime objects like oscillator, source, gain nodes
+const svgLinks = document.getElementById('svgLinks');
+const canvas = document.getElementById('canvas');
+const paletteItems = document.getElementById('paletteItems');
+const inspector = document.getElementById('insContent');
+const fileInput = document.getElementById('fileInput');
 
-/* Sound List */
-const soundNames=[
-  'Ping','Pong','Zap','Laser','Boop','Whistle','Chirp','Deep',
-  'Tone','Sweep','Error','Ping High','Click','Spark','Short Beep','Low Buzz'
-];
+/* UI state */
+let selectedNode = null;
+let linkingFrom = null;
+let snapToGrid = false;
+let zoomLevel = 1;
+let pan = {x:0,y:0};
 
-function playOsc(start,end,type,dur){
-  const now=audioCtx.currentTime;
-  const g=audioCtx.createGain();
-  g.gain.setValueAtTime(.001,now);
-  g.gain.exponentialRampToValueAtTime(1,now+.01);
-  g.gain.exponentialRampToValueAtTime(.001,now+dur);
-  g.connect(audioCtx.destination);
-
-  const o=audioCtx.createOscillator();
-  o.frequency.setValueAtTime(start,now);
-  o.frequency.exponentialRampToValueAtTime(end,now+dur);
-  o.type=type;
-  o.connect(g);
-  o.start(now);
-  o.stop(now+dur);
+/* helper */
+function newId(){ NODE_ID++; return 'n' + NODE_ID; }
+function setTransformScale(el, z){
+  el.style.transformOrigin = '0 0';
+  el.style.transform = 'scale(' + z + ')';
 }
 
-function playSoundID(id){
-  switch(id){
-    case 1: playOsc(800,800,'sine',.2); break;
-    case 2: playOsc(600,600,'sine',.2); break;
-    case 3: playOsc(400,800,'square',.25); break;
-    case 4: playOsc(1500,2000,'sawtooth',.3); break;
-    case 5: playOsc(900,600,'square',.15); break;
-    case 6: playOsc(1500,2500,'sine',.5); break;
-    case 7: playOsc(2000,2400,'triangle',.2); break;
-    case 8: playOsc(200,200,'sine',.4); break;
-    case 9: playOsc(500,500,'square',.3); break;
-    case 10: playOsc(700,1200,'sine',.35); break;
-    case 11: playOsc(300,300,'square',.25); break;
-    case 12: playOsc(2000,2600,'sine',.2); break;
-    case 13: playOsc(900,900,'triangle',.1); break;
-    case 14: playOsc(2500,800,'sawtooth',.25); break;
-    case 15: playOsc(700,700,'sine',.15); break;
-    case 16: playOsc(150,150,'square',.5); break;
+/* palette definitions */
+const palette = [
+  {type:'oscillator', label:'Oscillator'},
+  {type:'sample', label:'Sample Player'},
+  {type:'gain', label:'Gain'},
+  {type:'filter', label:'Filter (LP)'},
+  {type:'delay', label:'Delay'},
+  {type:'adsr', label:'ADSR Envelope'},
+  {type:'sequencer', label:'Sequencer (step)'},
+  {type:'output', label:'Output (master)'}
+];
+
+/* build palette DOM */
+function buildPalette(){
+  paletteItems.innerHTML = '';
+  palette.forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'palette-item';
+    el.innerHTML = '<div>' + p.label + '</div><button>Add</button>';
+    paletteItems.appendChild(el);
+    // drag support
+    el.draggable = true;
+    el.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', JSON.stringify(p));
+    });
+    el.querySelector('button').addEventListener('click', ()=> addNodeAt(p, 60 + Math.random()*600, 60 + Math.random()*300));
+  });
+}
+buildPalette();
+
+/* accept drop on canvas to create node */
+canvas.addEventListener('dragover', e=> e.preventDefault());
+canvas.addEventListener('drop', e=>{
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / zoomLevel;
+  const y = (e.clientY - rect.top) / zoomLevel;
+  try{
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    addNodeAt(data, x, y);
+  }catch(err){ console.warn(err); }
+});
+
+/* node factory */
+function addNodeAt(def, x=60, y=60){
+  const id = newId();
+  const base = {
+    id, x, y, type: def.type || def, label: def.label || (def.type||'node'),
+    params: {}
+  };
+
+  // set defaults per type
+  if(base.type === 'oscillator'){
+    base.params = {wave:'sine', freq:440, detune:0, gain:0.8};
+  } else if(base.type === 'sample'){
+    base.params = {url:null, buffer:null, gain:1, loop:false};
+  } else if(base.type === 'gain'){
+    base.params = {gain:1};
+  } else if(base.type === 'filter'){
+    base.params = {type:'lowpass', freq:1000, q:1};
+  } else if(base.type === 'delay'){
+    base.params = {time:0.25, feedback:0.2, wet:0.5};
+  } else if(base.type === 'adsr'){
+    base.params = {attack:0.02, decay:0.1, sustain:0.8, release:0.2};
+  } else if(base.type === 'sequencer'){
+    base.params = {steps:8, bpm:120, pattern:Array(8).fill(0), note:440, gate:200};
+  } else if(base.type === 'output'){
+    base.params = {gain:1};
+  }
+
+  nodes[id] = base;
+  renderNode(base);
+  drawAllLinks();
+  saveAuto();
+  return id;
+}
+
+/* render a visual node */
+function renderNode(node){
+  const el = document.createElement('div');
+  el.className = 'node';
+  el.id = node.id;
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.innerHTML = `
+    <div class='title'>${escapeHtml(node.label)} <span class='small' style='float:right'>${node.type}</span></div>
+    <div class='meta'>id:${node.id}</div>
+    <div class='row'>
+      <button class='playBtn'>Play</button>
+      <button class='holdBtn'>Hold</button>
+      <button class='delBtn'>Del</button>
+      <div class='connector' title='connector'></div>
+    </div>
+    <div class='field' style='margin-top:8px'>
+      <div class='small'>Params</div>
+      <div class='paramArea'></div>
+    </div>
+  `;
+  canvas.appendChild(el);
+  domNodes[node.id] = el;
+
+  // param UI
+  const paramsEl = el.querySelector('.paramArea');
+  buildParamsUI(node, paramsEl);
+
+  // drag
+  makeDraggable(el, node);
+
+  // handlers
+  el.querySelector('.delBtn').addEventListener('click', ()=>{ removeNode(node.id); });
+  el.querySelector('.playBtn').addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    await playFromNode(node.id);
+  });
+  el.querySelector('.holdBtn').addEventListener('mousedown', async (e)=>{
+    e.stopPropagation();
+    holdPlay(node.id);
+  });
+  el.querySelector('.holdBtn').addEventListener('mouseup', e=>{
+    e.stopPropagation(); stopNode(node.id);
+  });
+  el.querySelector('.connector').addEventListener('click', e=>{
+    e.stopPropagation();
+    if(linkingFrom === null){
+      linkingFrom = node.id;
+      el.style.boxShadow = '0 18px 30px rgba(79,70,229,.25)';
+    } else {
+      if(linkingFrom !== node.id){
+        links.push({from: linkingFrom, to: node.id});
+      }
+      linkingFrom = null;
+      clearHighlights();
+      drawAllLinks();
+      saveAuto();
+    }
+  });
+
+  el.addEventListener('contextmenu', async (ev)=>{
+    ev.preventDefault();
+    await playFromNode(node.id);
+  });
+
+  el.addEventListener('click', ev=>{
+    ev.stopPropagation();
+    selectNode(node.id);
+  });
+
+  return el;
+}
+
+/* param UI builder */
+function buildParamsUI(node, container){
+  container.innerHTML = '';
+  if(node.type === 'oscillator'){
+    container.appendChild(labeledInput('Frequency Hz', node.params.freq, val=>{ node.params.freq = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledSelect('Waveform', ['sine','square','sawtooth','triangle'], node.params.wave, val=>{ node.params.wave = val; saveAuto(); }));
+    container.appendChild(labeledInput('Gain', node.params.gain, val=>{ node.params.gain = parseFloat(val); saveAuto(); }));
+  } else if(node.type === 'sample'){
+    const info = document.createElement('div'); info.className='small'; info.textContent = node.params.url || 'No sample';
+    container.appendChild(info);
+    const btn = document.createElement('button'); btn.className='small-btn'; btn.textContent = 'Choose File';
+    btn.addEventListener('click', ()=> fileInput.click());
+    container.appendChild(btn);
+
+    fileInput.onchange = async (e)=>{
+      const f = e.target.files[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      node.params.url = url;
+      node.params.name = f.name;
+      const array = await f.arrayBuffer();
+      const buff = await audioCtx.decodeAudioData(array.slice(0));
+      node.params.buffer = buff;
+      buildParamsUI(node, container);
+      saveAuto();
+    };
+  } else if(node.type === 'gain'){
+    container.appendChild(labeledInput('Gain', node.params.gain, val=>{ node.params.gain = parseFloat(val); saveAuto(); }));
+  } else if(node.type === 'filter'){
+    container.appendChild(labeledSelect('Type', ['lowpass','highpass','bandpass'], node.params.type, val=>{ node.params.type = val; saveAuto(); }));
+    container.appendChild(labeledInput('Freq', node.params.freq, val=>{ node.params.freq = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Q', node.params.q, val=>{ node.params.q = parseFloat(val); saveAuto(); }));
+  } else if(node.type === 'delay'){
+    container.appendChild(labeledInput('Time s', node.params.time, val=>{ node.params.time = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Feedback', node.params.feedback, val=>{ node.params.feedback = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Wet', node.params.wet, val=>{ node.params.wet = parseFloat(val); saveAuto(); }));
+  } else if(node.type === 'adsr'){
+    container.appendChild(labeledInput('Attack s', node.params.attack, val=>{ node.params.attack = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Decay s', node.params.decay, val=>{ node.params.decay = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Sustain', node.params.sustain, val=>{ node.params.sustain = parseFloat(val); saveAuto(); }));
+    container.appendChild(labeledInput('Release s', node.params.release, val=>{ node.params.release = parseFloat(val); saveAuto(); }));
+  } else if(node.type === 'sequencer'){
+    container.appendChild(labeledInput('Steps', node.params.steps, val=>{
+      node.params.steps = Math.max(1, parseInt(val)); node.params.pattern = node.params.pattern.slice(0,node.params.steps).concat(Array(Math.max(0,node.params.steps - node.params.pattern.length)).fill(0)); saveAuto(); rebuildSequencerUI(node, container);
+    }));
+    buildSequencerUI(node, container);
+  } else if(node.type === 'output'){
+    container.appendChild(labeledInput('Master Gain', node.params.gain, val=>{ node.params.gain = parseFloat(val); saveAuto(); }));
   }
 }
 
-/* Build Sound Buttons */
-const grid=document.getElementById('soundGrid');
-soundNames.forEach((n,i)=>{
-  const b=document.createElement('div');
-  b.className='btn';
-  b.textContent=n;
-  b.addEventListener('mousedown',()=>playSoundID(i+1));
-  b.addEventListener('touchstart',e=>{e.preventDefault();playSoundID(i+1);},{passive:false});
-  grid.appendChild(b);
-});
+/* helpers for param elements */
+function labeledInput(label, val, onChange){
+  const wrap = document.createElement('div'); wrap.style.marginBottom='6px';
+  const lab = document.createElement('div'); lab.className='small'; lab.textContent = label;
+  const inp = document.createElement('input'); inp.className='input'; inp.value = val;
+  inp.addEventListener('input', ()=> onChange(inp.value));
+  wrap.appendChild(lab); wrap.appendChild(inp);
+  return wrap;
+}
+function labeledSelect(label, options, val, onChange){
+  const wrap = document.createElement('div'); wrap.style.marginBottom='6px';
+  const lab = document.createElement('div'); lab.className='small'; lab.textContent = label;
+  const sel = document.createElement('select'); sel.className='input';
+  options.forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; sel.appendChild(opt); });
+  sel.value = val;
+  sel.addEventListener('change', ()=> onChange(sel.value));
+  wrap.appendChild(lab); wrap.appendChild(sel);
+  return wrap;
+}
 
-/* EFFECTS — CENSOR */
-document.getElementById('effectBtn').addEventListener('click',()=>{
-  const a=document.getElementById('curseAudio');
-  a.currentTime=0;
-  a.play();
-});
+/* sequencer UI */
+function buildSequencerUI(node, container){
+  // clear previous sequencer block
+  const seqWrap = document.createElement('div');
+  seqWrap.style.display='grid';
+  seqWrap.style.gridTemplateColumns = 'repeat(8, 1fr)';
+  seqWrap.style.gap = '4px';
+  seqWrap.style.marginTop='6px';
+  node.params.pattern = node.params.pattern || Array(node.params.steps||8).fill(0);
+  for(let i=0;i<node.params.steps;i++){
+    const btn = document.createElement('button');
+    btn.className = 'small-btn';
+    btn.style.padding='8px';
+    btn.textContent = node.params.pattern[i] ? '●' : '○';
+    btn.addEventListener('click', ()=>{ node.params.pattern[i] = node.params.pattern[i] ? 0 : 1; btn.textContent = node.params.pattern[i] ? '●' : '○'; saveAuto(); });
+    seqWrap.appendChild(btn);
+  }
+  container.appendChild(seqWrap);
+}
+function rebuildSequencerUI(node, container){
+  buildParamsUI(node, container);
+}
 
-/* MUSIC MAKER SYSTEM */
-const canvas=document.getElementById('makerCanvas');
-let currentLine=null;
-let nodeList=[];
-let linkList=[];
-
-function makeNode(x,y,label){
-  const d=document.createElement('div');
-  d.className='node';
-  d.textContent=label;
-  d.style.left=x+'px';
-  d.style.top=y+'px';
-  canvas.appendChild(d);
-
-  let offX,offY,drag=false;
-
-  d.addEventListener('mousedown',e=>{
-    drag=true;
-    offX=e.offsetX;
-    offY=e.offsetY;
+/* make dom node draggable */
+function makeDraggable(el, node){
+  let dragging = false, ox=0, oy=0;
+  el.addEventListener('pointerdown', e=>{
+    if(e.target.classList.contains('connector')) return;
+    dragging = true;
+    ox = e.clientX; oy = e.clientY;
+    el.setPointerCapture(e.pointerId);
+    el.style.cursor = 'grabbing';
   });
-  document.addEventListener('mouseup',()=>drag=false);
-  document.addEventListener('mousemove',e=>{
-    if(!drag)return;
-    d.style.left=(e.pageX-offX)+'px';
-    d.style.top=(e.pageY-offY)+'px';
-  });
-
-  /* Node linking */
-  d.addEventListener('mousedown',e=>{
-    currentLine={
-      from:d,
-      x1:e.pageX,
-      y1:e.pageY
-    };
-  });
-
-  document.addEventListener('mouseup',e=>{
-    if(!currentLine)return;
-    const target=e.target;
-    if(target.classList.contains('node') && target!==currentLine.from){
-      makeLink(currentLine.from,target);
+  el.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const dx = (e.clientX - ox) / zoomLevel;
+    const dy = (e.clientY - oy) / zoomLevel;
+    ox = e.clientX; oy = e.clientY;
+    node.x += dx; node.y += dy;
+    if(snapToGrid){
+      node.x = Math.round(node.x / 16) * 16;
+      node.y = Math.round(node.y / 16) * 16;
     }
-    currentLine=null;
+    el.style.left = node.x + 'px';
+    el.style.top = node.y + 'px';
+    drawAllLinks();
   });
-
-  nodeList.push(d);
-}
-
-function makeLink(n1,n2){
-  const L=document.createElement('div');
-  L.className='line';
-  canvas.appendChild(L);
-  linkList.push({n1,n2,L});
-  updateLine(n1,n2,L);
-
-  /* Play chain when clicking n1 */
-  n1.addEventListener('click',()=>{
-    const idx=soundNames.indexOf(n1.textContent);
-    if(idx>=0) playSoundID(idx+1);
-    playChain(n1);
+  el.addEventListener('pointerup', e=>{
+    dragging = false; el.releasePointerCapture(e.pointerId);
+    el.style.cursor = 'grab';
+    saveAuto();
   });
 }
 
-function updateLine(n1,n2,L){
-  const x1=n1.offsetLeft+65;
-  const y1=n1.offsetTop+25;
-  const x2=n2.offsetLeft+65;
-  const y2=n2.offsetTop+25;
-  const dx=x2-x1;
-  const dy=y2-y1;
-  const len=Math.sqrt(dx*dx+dy*dy);
-  const ang=Math.atan2(dy,dx)*180/Math.PI;
-
-  L.style.left=x1+'px';
-  L.style.top=y1+'px';
-  L.style.width=len+'px';
-  L.style.transform='rotate('+ang+'deg)';
+/* clear highlights */
+function clearHighlights(){
+  Object.values(domNodes).forEach(d=> d.style.boxShadow = '0 12px 30px rgba(2,6,23,.45)');
 }
 
-function playChain(start){
-  const con=linkList.filter(l=>l.n1===start);
-  con.forEach(l=>{
-    const next=l.n2;
-    const idx=soundNames.indexOf(next.textContent);
-    if(idx>=0) playSoundID(idx+1);
-    setTimeout(()=>playChain(next),200);
+/* select node for inspector */
+function selectNode(id){
+  selectedNode = id;
+  const node = nodes[id];
+  inspector.innerHTML = '';
+  const title = document.createElement('div'); title.className='small'; title.style.fontWeight='700'; title.textContent = node.label + ' (' + node.type + ')';
+  inspector.appendChild(title);
+  const paramArea = document.createElement('div'); paramArea.style.marginTop='8px';
+  buildParamsUI(node, paramArea);
+  inspector.appendChild(paramArea);
+  const linkInfo = document.createElement('div'); linkInfo.className='small'; linkInfo.style.marginTop='10px';
+  const incoming = links.filter(l=>l.to===id).map(l=>nodes[l.from]?.label||l.from);
+  const outgoing = links.filter(l=>l.from===id).map(l=>nodes[l.to]?.label||l.to);
+  linkInfo.innerHTML = '<div>Incoming: ' + (incoming.join(', ') || '—') + '</div><div>Outgoing: ' + (outgoing.join(', ') || '—') + '</div>';
+  inspector.appendChild(linkInfo);
+}
+
+/* remove node */
+function removeNode(id){
+  // remove DOM, remove links, stop audio
+  const el = domNodes[id];
+  if(el) el.remove();
+  delete domNodes[id];
+  // remove links referencing it
+  for(let i = links.length-1; i>=0; i--){
+    if(links[i].from === id || links[i].to === id) links.splice(i,1);
+  }
+  delete nodes[id];
+  stopNode(id);
+  drawAllLinks();
+  inspector.innerHTML = '<div class=small>No node selected</div>';
+  saveAuto();
+}
+
+/* draw wire lines as SVG paths */
+function drawAllLinks(){
+  svgLinks.innerHTML = '';
+  const svgNS = 'http://www.w3.org/2000/svg';
+  // defs for arrow
+  const defs = document.createElementNS(svgNS, 'defs');
+  const marker = document.createElementNS(svgNS, 'marker');
+  marker.setAttribute('id', 'arrow');
+  marker.setAttribute('markerWidth', '8');
+  marker.setAttribute('markerHeight', '8');
+  marker.setAttribute('refX', '8');
+  marker.setAttribute('refY', '4');
+  marker.setAttribute('orient', 'auto');
+  const patha = document.createElementNS(svgNS,'path');
+  patha.setAttribute('d','M0,0 L8,4 L0,8 z');
+  patha.setAttribute('fill','#4f46e5');
+  marker.appendChild(patha);
+  defs.appendChild(marker);
+  svgLinks.appendChild(defs);
+
+  links.forEach((l, i)=>{
+    const a = nodes[l.from], b = nodes[l.to];
+    if(!a || !b) return;
+    const x1 = a.x + 140, y1 = a.y + 32;
+    const x2 = b.x + 20, y2 = b.y + 32;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const cx1 = x1 + Math.max(40, dx/3);
+    const cx2 = x2 - Math.max(40, dx/3);
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${y1} ${cx2} ${y2} ${x2} ${y2}`);
+    path.setAttribute('stroke', '#4f46e5');
+    path.setAttribute('stroke-width', '3');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('marker-end','url(#arrow)');
+    // right-click to remove link
+    path.addEventListener('contextmenu', e=>{
+      e.preventDefault();
+      if(confirm('Remove link?')){ links.splice(i,1); drawAllLinks(); saveAuto(); }
+    });
+    svgLinks.appendChild(path);
   });
 }
 
-/* Auto update link positions on drag */
-setInterval(()=>{
-  linkList.forEach(o=>updateLine(o.n1,o.n2,o.L));
-},50);
+/* ---------- Audio graph runtime: create WebAudio nodes from our nodes when playing ---------- */
 
-/* Pre-place some nodes */
-makeNode(200,200,'Ping');
-makeNode(500,240,'Zap');
-makeNode(800,180,'Laser');
+/* Instantiate audio nodes for a given logical node id for live preview/play */
+function instantiateNodeAudio(id){
+  const node = nodes[id];
+  if(!node) return null;
+  if(nodeAudioState[id]) return nodeAudioState[id]; // already created
+  const runtime = { id };
+  if(node.type === 'oscillator'){
+    const osc = audioCtx.createOscillator();
+    osc.type = node.params.wave || 'sine';
+    osc.frequency.value = node.params.freq || 440;
+    const g = audioCtx.createGain();
+    g.gain.value = node.params.gain || 0.8;
+    osc.connect(g);
+    // no start until play
+    runtime.osc = osc; runtime.gain = g;
+  } else if(node.type === 'sample'){
+    const g = audioCtx.createGain(); g.gain.value = node.params.gain || 1;
+    runtime.gain = g;
+    // source created on play
+  } else if(node.type === 'gain'){
+    const g = audioCtx.createGain(); g.gain.value = node.params.gain || 1;
+    runtime.gain = g;
+  } else if(node.type === 'filter'){
+    const f = audioCtx.createBiquadFilter();
+    f.type = node.params.type || 'lowpass';
+    f.frequency.value = node.params.freq || 1000;
+    f.Q.value = node.params.q || 1;
+    runtime.filter = f;
+  } else if(node.type === 'delay'){
+    const d = audioCtx.createDelay(5.0);
+    d.delayTime.value = node.params.time || 0.25;
+    const fb = audioCtx.createGain(); fb.gain.value = node.params.feedback || 0.2;
+    const wet = audioCtx.createGain(); wet.gain.value = node.params.wet || 0.5;
+    runtime.delay = d; runtime.fb = fb; runtime.wet = wet;
+    // connect feedback loop
+    d.connect(fb); fb.connect(d); d.connect(wet);
+  } else if(node.type === 'adsr'){
+    // runtime will provide a method to apply envelope to a gain node
+    runtime.adsr = {...node.params};
+  } else if(node.type === 'sequencer'){
+    runtime.sequencer = {...node.params};
+  } else if(node.type === 'output'){
+    const g = audioCtx.createGain(); g.gain.value = node.params.gain || 1;
+    runtime.gain = g;
+  }
+  nodeAudioState[id] = runtime;
+  return runtime;
+}
+
+/* connect runtime graph for live play:
+   create audio nodes for every logical node and connect according to links,
+   final outputs should go to audioCtx.destination (or master output nodes if present).
+   We build connections for preview; to avoid reusing nodes across plays we create fresh nodes for each play step where needed.
+*/
+function buildRuntimeGraph(){
+  // clear any previous runtime objects that are connected
+  Object.values(nodeAudioState).forEach(r=>{
+    // do not stop oscillator here (we start/stop when needed)
+  });
+
+  // create runtime for all nodes
+  Object.keys(nodes).forEach(id=> instantiateNodeAudio(id) );
+
+  // connect runtime objects according to links
+  // for each link: if source has output (osc->gain->...), connect to target input
+  links.forEach(l=>{
+    const from = nodeAudioState[l.from];
+    const toNode = nodes[l.to];
+    const to = nodeAudioState[l.to];
+    if(!from || !to) return;
+    // determine source out: prefer gain, else osc
+    let outNode = null;
+    if(from.gain) outNode = from.gain;
+    else if(from.osc) outNode = from.osc;
+    else if(from.filter) outNode = from.filter;
+    // determine target in: prefer filter, gain, delay, etc
+    if(to.filter) {
+      try{ outNode.connect(to.filter); }catch(e){}
+    } else if(to.gain){
+      try{ outNode.connect(to.gain); }catch(e){}
+    } else if(to.delay){
+      try{ outNode.connect(to.delay); }catch(e){}
+    } else if(to.osc){
+      // not typical
+    } else {
+      // fallback to master
+      outNode.connect(audioCtx.destination);
+    }
+  });
+
+  // direct connect nodes with no inbound to master for monitoring if no output node exists
+  const hasOutputNode = Object.values(nodes).some(n=> n.type === 'output');
+  if(!hasOutputNode){
+    // connect any gain or filter or delay that has no outgoing to destination
+    Object.keys(nodes).forEach(id=>{
+      const runtime = nodeAudioState[id];
+      const nodeHasOutgoing = links.some(l=> l.from === id);
+      if(!nodeHasOutgoing){
+        let out = runtime && (runtime.gain || runtime.filter || runtime.delay);
+        if(out) try{ out.connect(audioCtx.destination); }catch(e){}
+      }
+    });
+  } else {
+    // if output nodes exist, connect their gain to destination
+    Object.keys(nodes).forEach(id=>{
+      if(nodes[id].type === 'output'){
+        const r = nodeAudioState[id];
+        if(r && r.gain){
+          try{ r.gain.connect(audioCtx.destination); }catch(e){}
+        }
+      }
+    });
+  }
+}
+
+/* play functions */
+async function playFromNode(startId){
+  if(audioCtx.state === 'suspended') await audioCtx.resume();
+  // Build graph fresh for this play
+  buildRuntimeGraph();
+  // traverse using simple depth-first following first outgoing link
+  const visited = new Set();
+  let cur = startId;
+  const maxSteps = 500;
+  let steps = 0;
+  while(cur && steps < maxSteps){
+    steps++;
+    const n = nodes[cur];
+    if(!n) break;
+    await playNodeOnce(cur);
+    visited.add(cur);
+    // find first outgoing
+    const outs = links.filter(l=> l.from === cur ).map(l=> l.to);
+    cur = outs.length ? outs[0] : null;
+    if(visited.has(cur)) break;
+  }
+}
+
+/* play a single node once (short preview) */
+async function playNodeOnce(id){
+  const node = nodes[id];
+  if(!node) return;
+  if(node.type === 'oscillator'){
+    const runtime = instantiateNodeAudio(id);
+    // create new oscillator for each preview
+    const osc = audioCtx.createOscillator();
+    osc.type = node.params.wave;
+    osc.frequency.value = node.params.freq;
+    const g = audioCtx.createGain();
+    g.gain.value = node.params.gain || 0.8;
+    osc.connect(g);
+    // connect downstream links
+    connectOutputToOutgoing(id, g);
+    osc.start();
+    await wait(300);
+    try{ osc.stop(); osc.disconnect(); g.disconnect(); }catch(e){}
+  } else if(node.type === 'sample'){
+    if(node.params.buffer){
+      const src = audioCtx.createBufferSource();
+      src.buffer = node.params.buffer;
+      const g = audioCtx.createGain(); g.gain.value = node.params.gain || 1;
+      src.connect(g);
+      connectOutputToOutgoing(id, g);
+      src.start();
+      await wait(Math.min(2000, src.buffer.duration * 1000));
+      try{ src.stop(); src.disconnect(); g.disconnect(); }catch(e){}
+    } else {
+      // try URL or skip
+      if(node.params.url){
+        try{
+          const a = new Audio(node.params.url);
+          a.play();
+          await wait(1000);
+          a.pause();
+        }catch(e){}
+      }
+    }
+  } else if(node.type === 'sequencer'){
+    await playSequencer(node);
+  } else {
+    // for gain/filter/delay types we can briefly generate a click to pass through
+    const g = audioCtx.createGain(); g.gain.value = 0.0001;
+    const o = audioCtx.createOscillator(); o.frequency.value = 1000; o.type = 'sine';
+    o.connect(g);
+    connectOutputToOutgoing(id, g);
+    o.start();
+    await wait(120);
+    o.stop(); try{ o.disconnect(); g.disconnect(); }catch(e){}
+  }
+}
+
+/* hold play (sustain while held) */
+function holdPlay(id){
+  const node = nodes[id];
+  if(!node) return;
+  if(node.type === 'oscillator'){
+    const osc = audioCtx.createOscillator();
+    osc.type = node.params.wave;
+    osc.frequency.value = node.params.freq;
+    const g = audioCtx.createGain(); g.gain.value = node.params.gain || 0.8;
+    osc.connect(g);
+    connectOutputToOutgoing(id, g);
+    osc.start();
+    nodeAudioState[id] = nodeAudioState[id] || {};
+    nodeAudioState[id].hold = {osc,g};
+  } else if(node.type === 'sample'){
+    if(node.params.buffer){
+      const src = audioCtx.createBufferSource();
+      src.buffer = node.params.buffer;
+      src.loop = node.params.loop || false;
+      const g = audioCtx.createGain(); g.gain.value = node.params.gain || 1;
+      src.connect(g);
+      connectOutputToOutgoing(id, g);
+      src.start();
+      nodeAudioState[id] = nodeAudioState[id] || {};
+      nodeAudioState[id].hold = {src,g};
+    }
+  }
+}
+function stopNode(id){
+  const st = nodeAudioState[id] && nodeAudioState[id].hold;
+  if(st){
+    if(st.osc){ try{ st.osc.stop(); st.osc.disconnect(); }catch(e){} }
+    if(st.src){ try{ st.src.stop(); st.src.disconnect(); }catch(e){} }
+    if(st.g){ try{ st.g.disconnect(); }catch(e){} }
+    delete nodeAudioState[id].hold;
+  }
+}
+
+/* connect a source (AudioNode) to all outgoing targets' inputs */
+function connectOutputToOutgoing(fromId, sourceNode){
+  const outs = links.filter(l=> l.from === fromId ).map(l=> l.to);
+  if(outs.length === 0){
+    // connect to master unless output node exists
+    const hasOutput = Object.values(nodes).some(n=> n.type === 'output');
+    if(hasOutput){
+      // find output nodes and connect their runtime gain
+      Object.keys(nodes).forEach(id=>{
+        if(nodes[id].type === 'output'){
+          const rt = instantiateNodeAudio(id);
+          if(rt && rt.gain) try{ sourceNode.connect(rt.gain); }catch(e){}
+        }
+      });
+    } else {
+      try{ sourceNode.connect(audioCtx.destination); }catch(e){}
+    }
+  } else {
+    outs.forEach(tid=>{
+      const tnode = nodes[tid];
+      const trt = instantiateNodeAudio(tid);
+      if(!trt) return;
+      // connect to best input (gain > filter > delay)
+      if(trt.filter) try{ sourceNode.connect(trt.filter); }catch(e){}
+      else if(trt.gain) try{ sourceNode.connect(trt.gain); }catch(e){}
+      else if(trt.delay) try{ sourceNode.connect(trt.delay); }catch(e){}
+      else try{ sourceNode.connect(audioCtx.destination); }catch(e){}
+    });
+  }
+}
+
+/* sequencer player (simple step playback) */
+async function playSequencer(node){
+  const bpm = node.params.bpm || 120;
+  const stepMs = 60000 / bpm;
+  for(let i=0;i<node.params.pattern.length;i++){
+    if(node.params.pattern[i]){
+      // create oscillator as note
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = node.params.note || 440;
+      const g = audioCtx.createGain(); g.gain.value = 0.8;
+      osc.connect(g);
+      connectOutputToOutgoing(node.id, g);
+      osc.start();
+      await wait(node.params.gate || 200);
+      try{ osc.stop(); osc.disconnect(); g.disconnect(); }catch(e){}
+    }
+    await wait(stepMs - (node.params.gate || 200));
+  }
+}
+
+/* small util wait */
+function wait(ms){ return new Promise(res=> setTimeout(res, ms)); }
+
+/* ---------- Render mixdown to WAV using OfflineAudioContext ---------- */
+async function renderToWav(durationSec=10){
+  // Build an offline graph that reproduces our project for durationSec
+  // Sample rate same as audioCtx
+  const sampleRate = audioCtx.sampleRate || 44100;
+  const offline = new OfflineAudioContext(2, sampleRate * durationSec, sampleRate);
+
+  // local map of runtime nodes for offline context
+  const offRuntime = {};
+
+  // create similar nodes in offline context
+  Object.keys(nodes).forEach(id=>{
+    const n = nodes[id];
+    if(n.type === 'oscillator'){
+      // will create buffer source with generated waves by scheduling oscillator to offline context
+      const osc = offline.createOscillator ? offline.createOscillator() : null;
+      // offline.createOscillator not supported consistently; instead we will synthesize using an oscillator node by using OfflineAudioContext.createOscillator when available
+    }
+    // For simplicity, we support sample-based and basic oscillator by creating periodic wave via Oscillator if available.
+  });
+
+  // approach: schedule simple play by traversing graph starting from root nodes; create temporary oscillators/buffer sources and connect to offline.destination
+  // find roots
+  const hasIn = new Set(links.map(l=>l.to));
+  const rootIds = Object.keys(nodes).filter(id=> !hasIn.has(id));
+  if(rootIds.length === 0) rootIds.push(...Object.keys(nodes));
+
+  // helper to create offline chain for a node and connect to outputs
+  function createOfflineNode(id){
+    const n = nodes[id];
+    if(!n) return null;
+    if(n.type === 'oscillator'){
+      const o = offline.createOscillator();
+      o.type = n.params.wave || 'sine';
+      o.frequency.value = n.params.freq || 440;
+      const g = offline.createGain(); g.gain.value = n.params.gain || 0.8;
+      o.connect(g);
+      offRuntime[id] = {osc:o, gain:g};
+      return g;
+    } else if(n.type === 'sample' && n.params.buffer){
+      const bSource = offline.createBufferSource();
+      // copy buffer to offline context
+      const oldBuf = n.params.buffer;
+      const newBuf = offline.createBuffer(oldBuf.numberOfChannels, oldBuf.length, oldBuf.sampleRate);
+      for(let ch=0; ch<oldBuf.numberOfChannels; ch++){
+        newBuf.copyToChannel(oldBuf.getChannelData(ch), ch);
+      }
+      bSource.buffer = newBuf;
+      const g = offline.createGain(); g.gain.value = n.params.gain || 1;
+      bSource.connect(g);
+      offRuntime[id] = {src:bSource, gain:g};
+      return g;
+    } else if(n.type === 'gain'){
+      const g = offline.createGain(); g.gain.value = n.params.gain || 1;
+      offRuntime[id] = {gain:g};
+      return g;
+    } else if(n.type === 'filter'){
+      const f = offline.createBiquadFilter();
+      f.type = n.params.type || 'lowpass';
+      f.frequency.value = n.params.freq || 1000;
+      f.Q.value = n.params.q || 1;
+      offRuntime[id] = {filter:f};
+      return f;
+    } else if(n.type === 'delay'){
+      const d = offline.createDelay(5.0);
+      d.delayTime.value = n.params.time || 0.25;
+      const fb = offline.createGain(); fb.gain.value = n.params.feedback || 0.2;
+      const wet = offline.createGain(); wet.gain.value = n.params.wet || 0.5;
+      d.connect(fb); fb.connect(d); d.connect(wet);
+      offRuntime[id] = {delay:d, fb:fb, wet:wet};
+      return wet;
+    } else if(n.type === 'output'){
+      const g = offline.createGain(); g.gain.value = n.params.gain || 1;
+      offRuntime[id] = {gain:g};
+      return g;
+    } else {
+      // fallback gain
+      const g = offline.createGain(); g.gain.value = 1;
+      offRuntime[id] = {gain:g};
+      return g;
+    }
+  }
+
+  // create nodes
+  Object.keys(nodes).forEach(id=> createOfflineNode(id) );
+
+  // connect links offline
+  links.forEach(l=>{
+    const src = offRuntime[l.from];
+    const dst = offRuntime[l.to];
+    if(!src || !dst) return;
+    const out = src.gain || src.osc || src.src || src.filter || src.delay;
+    const inNode = dst.gain || dst.filter || dst.delay;
+    if(out && inNode) try{ out.connect(inNode); }catch(e){}
+  });
+
+  // connect final outputs -> offline.destination
+  const hasOutputNode = Object.values(nodes).some(n=> n.type === 'output');
+  if(hasOutputNode){
+    Object.keys(nodes).forEach(id=>{
+      if(nodes[id].type === 'output'){
+        const rt = offRuntime[id];
+        if(rt && rt.gain) rt.gain.connect(offline.destination);
+      }
+    });
+  } else {
+    // connect nodes without outgoing to destination
+    Object.keys(nodes).forEach(id=>{
+      const rt = offRuntime[id];
+      const hasOut = links.some(l=> l.from === id);
+      const outNode = rt && (rt.gain || rt.filter || rt.delay || rt.osc || rt.src);
+      if(!hasOut && outNode) try{ outNode.connect(offline.destination); }catch(e){}
+    });
+  }
+
+  // start sources
+  Object.keys(offRuntime).forEach(id=>{
+    const r = offRuntime[id];
+    if(r.osc){
+      r.osc.start(0);
+      // set stop at duration
+      r.osc.stop(durationSec + 0.1);
+    }
+    if(r.src){
+      r.src.start(0);
+      // let it play full or stop at duration
+    }
+  });
+
+  // render
+  const rendered = await offline.startRendering();
+  // convert to WAV
+  const wav = audioBufferToWav(rendered);
+  const blob = new Blob([wav], {type: 'audio/wav'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = (document.getElementById('projectName').value || 'mixdown') + '.wav';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* tiny WAV encoder from audio buffer (Float32 -> 16-bit PCM) */
+function audioBufferToWav(buffer){
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+
+  const result = interleave(buffer);
+  const bufferLength = 44 + result.length * 2;
+  const view = new DataView(new ArrayBuffer(bufferLength));
+
+  /* RIFF identifier */
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + result.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+  view.setUint16(32, numChannels * bitDepth / 8, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, result.length * 2, true);
+
+  // write PCM samples
+  let offset = 44;
+  for(let i=0;i<result.length;i++, offset+=2){
+    const s = Math.max(-1, Math.min(1, result[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return view;
+  function writeString(view, offset, string){
+    for(let i=0;i<string.length;i++) view.setUint8(offset + i, string.charCodeAt(i));
+  }
+  function interleave(inputBuffer){
+    const channels = [];
+    for(let i=0;i<inputBuffer.numberOfChannels;i++) channels.push(inputBuffer.getChannelData(i));
+    const length = channels[0].length;
+    const result = new Float32Array(length * channels.length);
+    let index = 0;
+    for(let i=0;i<length;i++){
+      for(let ch=0;ch<channels.length;ch++){
+        result[index++] = channels[ch][i];
+      }
+    }
+    return result;
+  }
+}
+
+/* ---------- UI controls and wiring ---------- */
+
+/* interactive add buttons */
+document.getElementById('addOsc').addEventListener('click', ()=> addNodeAt({type:'oscillator', label:'Osc'}));
+document.getElementById('addSample').addEventListener('click', ()=> addNodeAt({type:'sample', label:'Sample'}));
+document.getElementById('addGain').addEventListener('click', ()=> addNodeAt({type:'gain', label:'Gain'}));
+document.getElementById('addFilter').addEventListener('click', ()=> addNodeAt({type:'filter', label:'Filter'}));
+document.getElementById('addDelay').addEventListener('click', ()=> addNodeAt({type:'delay', label:'Delay'}));
+document.getElementById('addAdsr').addEventListener('click', ()=> addNodeAt({type:'adsr', label:'ADSR'}));
+document.getElementById('addSeq').addEventListener('click', ()=> addNodeAt({type:'sequencer', label:'Seq'}));
+
+/* play whole graph from all outputs */
+document.getElementById('playAll')?.addEventListener('click', ()=> {
+  const outputNodes = Object.keys(nodes).filter(id=> nodes[id].type === 'output');
+  if(outputNodes.length) outputNodes.forEach(id => playFromNode(id));
+});
+
+/* save / load / export / import */
+document.getElementById('btnSave').addEventListener('click', ()=> saveToLocal());
+document.getElementById('btnLoad').addEventListener('click', ()=> loadFromLocal());
+document.getElementById('btnExport').addEventListener('click', ()=> {
+  const json = exportProject();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+  a.download = (document.getElementById('projectName').value || 'project') + '.json'; a.click();
+});
+document.getElementById('btnImport').addEventListener('click', ()=>{
+  const txt = prompt('Paste project JSON');
+  if(!txt) return;
+  try{ loadProject(JSON.parse(txt)); } catch(e){ alert('Invalid JSON'); }
+});
+document.getElementById('btnRender').addEventListener('click', async ()=>{
+  const dur = parseFloat(prompt('Render duration in seconds', '10') || '10');
+  if(isNaN(dur) || dur <= 0) return alert('Invalid duration');
+  await renderToWav(dur);
+});
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  if(!confirm('Clear all nodes and links?')) return;
+  Object.keys(domNodes).forEach(k=> domNodes[k].remove());
+  for(let k in domNodes) delete domNodes[k];
+  for(let k in nodes) delete nodes[k];
+  links.length = 0;
+  NODE_ID = 0;
+  drawAllLinks();
+  inspector.innerHTML = '<div class=small>No node selected</div>';
+  saveAuto();
+});
+
+/* snap and zoom */
+document.getElementById('snapGrid').addEventListener('click', ()=>{
+  snapToGrid = !snapToGrid;
+  document.getElementById('snapGrid').textContent = snapToGrid ? 'Snap ON' : 'Snap to Grid';
+});
+document.getElementById('zoomIn').addEventListener('click', ()=>{ zoomLevel = Math.min(2, zoomLevel + 0.1); setTransformScale(canvas, zoomLevel); });
+document.getElementById('zoomOut').addEventListener('click', ()=>{ zoomLevel = Math.max(0.4, zoomLevel - 0.1); setTransformScale(canvas, zoomLevel); });
+
+/* upload sample button */
+document.getElementById('uploadSample').addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const array = await f.arrayBuffer();
+  const buff = await audioCtx.decodeAudioData(array.slice(0));
+  // create sample node at random position with buffer loaded
+  const id = addNodeAt({type:'sample', label: f.name}, 60 + Math.random()*500, 80 + Math.random()*200);
+  nodes[id].params.buffer = buff;
+  nodes[id].params.url = URL.createObjectURL(f);
+  saveAuto();
+});
+
+/* censor play */
+document.getElementById('censorPlay').addEventListener('click', ()=>{
+  const a = document.getElementById('censorAudio');
+  try{ a.currentTime = 0; a.play(); }catch(e){ console.warn(e); }
+});
+
+/* select and click handling */
+canvas.addEventListener('click', e=>{
+  // clear linking mode and selection
+  linkingFrom = null;
+  clearHighlights();
+  inspector.innerHTML = '<div class=small>No node selected</div>';
+});
+
+/* draw links regularly to keep positions correct */
+setInterval(()=> drawAllLinks(), 120);
+
+/* export / import project */
+function exportProject(){
+  const project = { meta:{name: document.getElementById('projectName').value || ''}, NODE_ID, nodes, links };
+  return JSON.stringify(project, null, 2);
+}
+function loadProject(data){
+  // clear DOM
+  Object.keys(domNodes).forEach(k=> domNodes[k].remove());
+  for(let k in domNodes) delete domNodes[k];
+  for(let k in nodes) delete nodes[k];
+  links.length = 0;
+  // restore
+  NODE_ID = data.NODE_ID || 0;
+  Object.assign(nodes, data.nodes || {});
+  (data.links || []).forEach(l=> links.push(l));
+  // render nodes
+  Object.values(nodes).forEach(n=> renderNode(n));
+  drawAllLinks();
+  saveAuto();
+}
+function saveToLocal(){
+  const key = 'music_maker_project_v1';
+  localStorage.setItem(key, exportProject());
+  alert('Project saved to localStorage');
+}
+function loadFromLocal(){
+  const key = 'music_maker_project_v1';
+  const s = localStorage.getItem(key);
+  if(!s) return alert('No project in localStorage');
+  try{ loadProject(JSON.parse(s)); }catch(e){ alert('Failed to load'); }
+}
+
+/* autosave on change */
+function saveAuto(){ try{ localStorage.setItem('music_maker_auto_v1', exportProject()); }catch(e){} }
+(function loadAuto(){ const s = localStorage.getItem('music_maker_auto_v1'); if(s) try{ loadProject(JSON.parse(s)); }catch(e){} })();
+
+/* undo/redo stack (basic) */
+const undoStack = []; const redoStack = [];
+function pushUndo(){
+  undoStack.push(exportProject());
+  if(undoStack.length > 40) undoStack.shift();
+}
+function undo(){ if(!undoStack.length) return; redoStack.push(exportProject()); const s = undoStack.pop(); loadProject(JSON.parse(s)); }
+function redo(){ if(!redoStack.length) return; undoStack.push(exportProject()); const s = redoStack.pop(); loadProject(JSON.parse(s)); }
+
+/* save on major actions */
+['addNodeAt','removeNode'].forEach(k=>{}); // placeholder
+
+/* ---------- small helpers ---------- */
+function escapeHtml(unsafe){ return unsafe.replace(/[&<"'>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]; }); }
+
+/* small utility to play chain preview from a node (follow first outgoing) */
+async function playChainFrom(nodeId, maxSteps = 400){
+  if(audioCtx.state === 'suspended') await audioCtx.resume();
+  let cur = nodeId; let steps = 0;
+  while(cur && steps < maxSteps){
+    steps++;
+    await playNodeOnce(cur);
+    const next = links.find(l=> l.from === cur);
+    cur = next ? next.to : null;
+  }
+}
+
+/* expose top-level playFromNode for UI */
+window.playFromNode = playFromNode;
+
+/* utility play for right-click and inspector usage */
+async function playAllRoots(){
+  const hasIn = new Set(links.map(l=>l.to));
+  const roots = Object.keys(nodes).filter(id=> !hasIn.has(id));
+  for(const r of roots) await playChainFrom(r);
+}
+
+/* helper audio sample generation and node traversal for offline rendering is above */
+
+/* initial demo nodes for immediate fun */
+addNodeAt({type:'oscillator', label:'KickOsc'}, 120, 120);
+addNodeAt({type:'gain', label:'KickGain'}, 360, 120);
+addNodeAt({type:'filter', label:'Lowpass'}, 600, 120);
+addNodeAt({type:'output', label:'Master'}, 860, 120);
+links.push({from:'n1', to:'n2'}, {from:'n2', to:'n3'}, {from:'n3', to:'n4'});
+drawAllLinks();
 
 </script>
 </body>
