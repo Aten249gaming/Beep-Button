@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Beep Buttons</title>
+  <title>Custom Beep Buttons</title>
   <style>
     :root{--bg:#0f172a;--btn:#ef4444;--btn-shadow:rgba(239,68,68,.25)}
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
@@ -29,17 +29,28 @@
 </head>
 <body>
   <main class="center">
-    <button id="beep" class="beep-btn" aria-pressed="false" aria-label="Censor beep">Censor Beep</button>
+    <button id="curseBeep" class="beep-btn" aria-pressed="false" aria-label="Censor beep">Censor Beep</button>
     <button id="simpleBeep" class="beep-btn" aria-pressed="false" aria-label="Simple beep">Beep</button>
     <button id="whistle" class="beep-btn" aria-pressed="false" aria-label="Whistle sound">Whistle</button>
     <div class="hint">Click or press <kbd>Space</kbd> / <kbd>Enter</kbd></div>
   </main>
   <footer>Single-file demo — copy to GitHub Pages to host</footer>
 
+  <!-- Custom audio file for curse beep -->
+  <audio id="curseAudio" src="curse_beep.mp3" preload="auto"></audio>
+
   <script>
     (function(){
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       let playing = {};
+
+      const curseAudio = document.getElementById('curseAudio');
+
+      function playCustomAudio(audio){
+        if(!audio) return;
+        audio.currentTime = 0;
+        audio.play();
+      }
 
       function playOsc(frequencies, duration=0.2){
         if(!audioCtx) return;
@@ -67,8 +78,8 @@
         document.getElementById(id).setAttribute('aria-pressed','true');
 
         switch(id){
-          case 'beep': // censor beep
-            playOsc([{start:1200,end:2200,type:'square'}],0.16);
+          case 'curseBeep': // play custom audio
+            playCustomAudio(curseAudio);
             break;
           case 'simpleBeep': // plain beep
             playOsc([{start:800,end:800,type:'sine'}],0.2);
@@ -85,21 +96,21 @@
       }
 
       // Attach events
-      ['beep','simpleBeep','whistle'].forEach(id=>{
+      ['curseBeep','simpleBeep','whistle'].forEach(id=>{
         const btn = document.getElementById(id);
         btn.addEventListener('click',()=>trigger(id));
         btn.addEventListener('touchstart',e=>{e.preventDefault(); trigger(id);},{passive:false});
       });
 
-      // Keyboard shortcut for main beep
+      // Keyboard shortcut triggers curse beep
       window.addEventListener('keydown', e=>{
         if(e.code==='Space'||e.code==='Enter'){
           if(e.target===document.body) e.preventDefault();
-          trigger('beep');
+          trigger('curseBeep');
         }
       });
 
-      // Resume AudioContext on first user gesture
+      // Resume AudioContext on first gesture
       document.addEventListener('click', function once(){
         if(audioCtx.state==='suspended') audioCtx.resume();
         document.removeEventListener('click', once);
@@ -108,3 +119,4 @@
   </script>
 </body>
 </html>
+
