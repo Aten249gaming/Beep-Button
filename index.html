@@ -50,7 +50,7 @@
         gainNode.gain.exponentialRampToValueAtTime(0.0001, now+duration);
         gainNode.connect(audioCtx.destination);
 
-        const oscs = frequencies.map(freq => {
+        frequencies.forEach(freq => {
           const osc = audioCtx.createOscillator();
           osc.frequency.setValueAtTime(freq.start, now);
           osc.frequency.exponentialRampToValueAtTime(freq.end, now+duration);
@@ -58,7 +58,6 @@
           osc.connect(gainNode);
           osc.start(now);
           osc.stop(now+duration);
-          return osc;
         });
       }
 
@@ -92,7 +91,7 @@
         btn.addEventListener('touchstart',e=>{e.preventDefault(); trigger(id);},{passive:false});
       });
 
-      // Keyboard shortcuts
+      // Keyboard shortcut for main beep
       window.addEventListener('keydown', e=>{
         if(e.code==='Space'||e.code==='Enter'){
           if(e.target===document.body) e.preventDefault();
@@ -100,14 +99,12 @@
         }
       });
 
-      // Resume AudioContext on first gesture
+      // Resume AudioContext on first user gesture
       document.addEventListener('click', function once(){
         if(audioCtx.state==='suspended') audioCtx.resume();
         document.removeEventListener('click', once);
       });
-
     })();
   </script>
 </body>
 </html>
-
