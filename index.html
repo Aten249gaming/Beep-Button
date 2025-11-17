@@ -1,203 +1,799 @@
 <!doctype html>
 <html lang=en>
 <head>
-<meta charset=utf-8 />
-<meta name=viewport content=width=device-width,initial-scale=1 />
-<title>Sound Panel</title>
-
+<meta charset=utf-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<title>Sound Panel — Node Maker</title>
 <style>
 :root{
-  --bg:#0f172a;
-  --panel:#1e293b;
+  --bg:#071029;
+  --panel:#0f172a;
   --tab:#334155;
   --tab-active:#475569;
-  --btn:#4f46e5;
+  --muted:#94a3b8;
+  --card:#f8fafc; /* paper card */
+  --card-text:#0b1220;
+  --accent:#4f46e5;
+  --accent2:#ef4444;
+  --pill:#1e293b;
 }
-html,body{
-  height:100%;
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-  background:var(--bg);
-  color:#fff;
-}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#0f172a);color:#fff}
 .topbar{
-  width:100%;
-  background:var(--tab);
-  padding:10px;
-  display:flex;
-  gap:10px;
-  box-sizing:border-box;
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);
+  background:var(--tab);padding:10px 14px;border-radius:22px;display:flex;gap:10px;z-index:1200;
+  box-shadow:0 8px 30px rgba(2,6,23,.6);
 }
-.tab{
-  padding:8px 14px;
-  background:var(--tab);
-  border-radius:6px;
-  cursor:pointer;
+.tab{padding:8px 14px;border-radius:14px;cursor:pointer;user-select:none;background:transparent;color:#dbeafe}
+.tab.active{background:var(--tab-active);font-weight:700;color:#fff}
+.app{
+  padding-top:88px;display:flex;gap:18px;align-items:flex-start;max-width:1400px;margin:0 auto;
+}
+/* left palette */
+.palette{
+  width:220px;padding:12px;border-radius:12px;background:rgba(255,255,255,.03);box-shadow:0 6px 18px rgba(2,6,23,.6);
+  height:calc(100vh - 140px);overflow:auto;
+}
+.palette h3{margin:6px 0 10px 0;font-size:15px;color:var(--muted)}
+.p-item{
+  display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;margin-bottom:8px;background:linear-gradient(180deg,#0b1220,#091025);
+  cursor:grab;user-select:none;
+}
+.p-item:active{cursor:grabbing;transform:scale(.995)}
+.p-name{flex:1;font-size:14px}
+.p-btn{background:var(--accent);border:0;color:white;padding:6px 8px;border-radius:8px;font-weight:700;cursor:pointer}
+
+/* center canvas */
+.canvas-wrap{
+  position:relative;flex:1;height:calc(100vh - 140px);border-radius:12px;overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border:1px solid rgba(255,255,255,0.03);
+}
+.canvas-top{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:transparent;
+  border-bottom:1px solid rgba(255,255,255,0.02)
+}
+.canvas{
+  position:relative;height:calc(100% - 44px);overflow:auto;
+  cursor:default;
+}
+
+/* node card */
+.node{
+  position:absolute;min-width:160px;background:var(--card);color:var(--card-text);
+  border-radius:10px;padding:8px;box-shadow:0 10px 30px rgba(2,6,23,.5);
+  touch-action:none;
   user-select:none;
 }
-.tab.active{
-  background:var(--tab-active);
-  font-weight:700;
+.node .title{font-weight:700;margin-bottom:6px}
+.node .controls{display:flex;gap:6px;align-items:center}
+.node .play{
+  border:0;padding:6px 8px;border-radius:8px;cursor:pointer;font-weight:700;background:var(--accent);color:white
 }
-.page{
-  display:none;
-  padding:20px;
-  display:none;
+.node .hold{background:#64748b;padding:6px 8px;border-radius:8px;color:white;border:0;cursor:pointer}
+.node .del{background:var(--accent2);border:0;padding:6px 8px;border-radius:8px;color:white;cursor:pointer}
+
+/* connector dot */
+.connector{
+  width:12px;height:12px;border-radius:50%;background:var(--accent2);display:inline-block;margin-left:6px;
+  box-shadow:0 3px 8px rgba(239,68,68,.25);cursor:pointer;border:2px solid white;
 }
-.page.active{
-  display:block;
+
+/* svg links overlay */
+.links-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;}
+
+/* right side inspector */
+.inspector{
+  width:260px;padding:12px;border-radius:12px;background:rgba(255,255,255,.03);height:calc(100vh - 140px);overflow:auto;
+  box-shadow:0 6px 18px rgba(2,6,23,.6);
 }
-.grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
-  justify-content:center;
-  margin-top:20px;
-}
-.btn{
-  width:120px;
-  height:120px;
-  border-radius:16px;
-  background:var(--btn);
-  border:0;
-  color:white;
-  font-size:1rem;
-  font-weight:700;
-  cursor:pointer;
-  display:grid;
-  place-items:center;
-  user-select:none;
-  box-shadow:0 6px 20px rgba(0,0,0,.35);
-  transition:transform .06s, filter .06s;
-}
-.btn:active{
-  transform:scale(.92);
-  filter:brightness(.92);
-}
-#censorBox{
-  position:fixed;
-  right:20px;
-  bottom:20px;
-}
+.inspector h4{margin-top:0}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.small{font-size:13px;color:var(--muted)}
+
+/* small helpers */
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.06);padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer}
+.status{font-size:13px;color:var(--muted);margin-left:8px}
+
+/* footer-ish */
+.controls{display:flex;gap:8px;align-items:center}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
 </style>
 </head>
-
 <body>
 
 <div class=topbar>
-  <div id=tabSounds class="tab active">sounds</div>
+  <div id=tabSounds class=tab>sounds</div>
   <div id=tabEffects class=tab>effects</div>
+  <div id=tabMaker class="tab active">music maker</div>
 </div>
 
-<div id=pageSounds class="page active">
-  <div class=grid id=soundGrid></div>
-</div>
+<div style="max-width:1400px;margin:0 auto;padding-top:18px">
+  <div class="app">
+    <!-- palette -->
+    <aside class=palette id=palette>
+      <h3>Palette — drag to canvas or double-click</h3>
+      <!-- items inserted by script -->
+      <div id=paletteList></div>
+      <hr style="opacity:.06;margin:8px 0">
+      <div class=small>Tips: Drag a card to canvas. Click connector dot then another node to link. Play graph from roots.</div>
+    </aside>
 
-<div id=pageEffects class=page>
-  <div id=censorBox>
-    <button id=censorBtn class=btn>Censor</button>
+    <!-- canvas -->
+    <section class=canvas-wrap>
+      <div class=canvas-top>
+        <div><strong>Node Canvas</strong> <span class=status id=rootCount></span></div>
+        <div class=controls>
+          <button id=addNode class=btn-ghost>New Node</button>
+          <button id=playGraph class=btn-ghost>Play Graph</button>
+          <button id=stopAll class=btn-ghost>Stop</button>
+          <button id=exportBtn class=btn-ghost>Export JSON</button>
+          <button id=importBtn class=btn-ghost>Load JSON</button>
+        </div>
+      </div>
+
+      <div class=canvas id=canvas>
+        <svg class=links-svg id=linksSVG></svg>
+      </div>
+    </section>
+
+    <!-- inspector -->
+    <aside class=inspector id=inspector>
+      <h4>Inspector</h4>
+      <div id=selectedInfo><div class=small>No node selected</div></div>
+      <hr style="opacity:.06">
+      <div class=row><button id=clearAll class=btn-ghost>Clear All</button><button id=centerAll class=btn-ghost>Center View</button></div>
+      <div class=row style="margin-top:12px"><button id=saveLayout class=btn-ghost>Save Layout</button><button id=loadLayout class=btn-ghost>Load Layout</button></div>
+      <div class=note>Save or export to move your nodes between sessions.</div>
+    </aside>
   </div>
 </div>
 
-<audio id=censorSound src=https://www.soundjay.com/button/beep-07.mp3 preload=auto></audio>
+<!-- effects censor audio -->
+<audio id=censorAudio src=curse_beep.mp3 preload=auto></audio>
 
 <script>
+/* ---------- Core data and utilities ---------- */
+const names = [
+  "Ping","Pong","Zap","Laser",
+  "Boop","Whistle","Chirp","Deep",
+  "Tone","Sweep","Error","Ping High",
+  "Click","Spark","Short Beep","Low Buzz"
+];
+
+const soundDefs = {
+  /* index -> frequency, waveform */
+  1:[400,"sine"],2:[600,"triangle"],3:[800,"square"],4:[1200,"sine"],
+  5:[250,"triangle"],6:[1500,"sine"],7:[1800,"square"],8:[300,"sine"],
+  9:[1000,"triangle"],10:[2200,"sine"],11:[90,"square"],12:[1300,"sine"],
+  13:[700,"triangle"],14:[1600,"square"],15:[940,"sine"],16:[500,"triangle"]
+};
+
 const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-let holdOsc = null;
+let liveOscs = {}; // nodeId -> oscillator (for hold)
+let nodes = {}; // id -> {id,x,y,label,type,soundIndex}
+let links = []; // {from,to}
+let selectedNodeId = null;
+let linkingFrom = null;
+let dragState = null;
+let nodeCounter = 0;
 
-function startOsc(freq,type){
-  holdOsc = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  holdOsc.type = type;
-  holdOsc.frequency.value = freq;
-  g.gain.value = 0.9;
-  holdOsc.connect(g);
-  g.connect(audioCtx.destination);
-  holdOsc.start();
+/* DOM refs */
+const paletteList = document.getElementById("paletteList");
+const canvas = document.getElementById("canvas");
+const linksSVG = document.getElementById("linksSVG");
+const inspector = document.getElementById("inspector");
+const selectedInfo = document.getElementById("selectedInfo");
+const rootCount = document.getElementById("rootCount");
+
+/* helper to create unique id */
+function newId(){ nodeCounter++; return "n"+nodeCounter; }
+
+/* ---------- Build palette ---------- */
+function makePalette(){
+  names.forEach((nm,i)=>{
+    const wrap = document.createElement("div");
+    wrap.className="p-item";
+    wrap.draggable=true;
+    const name = document.createElement("div"); name.className="p-name"; name.textContent=nm;
+    const btn = document.createElement("button"); btn.className="p-btn"; btn.textContent="Add";
+    // drag start
+    wrap.addEventListener("dragstart", e=>{
+      e.dataTransfer.setData("text/plain", JSON.stringify({kind:"sound",index:i+1,label:nm}));
+    });
+    // double click to add at center
+    wrap.addEventListener("dblclick", ()=>addNodeToCanvas({kind:"sound",index:i+1,label:nm}, canvas.clientWidth/2-80, canvas.clientHeight/2-40));
+    // add button
+    btn.addEventListener("click", ()=>addNodeToCanvas({kind:"sound",index:i+1,label:nm}, 40 + Math.random()*300, 40 + Math.random()*200));
+    wrap.appendChild(name); wrap.appendChild(btn);
+    paletteList.appendChild(wrap);
+  });
 }
+makePalette();
 
-function stopOsc(){
-  if(holdOsc){
-    holdOsc.stop();
-    holdOsc.disconnect();
-    holdOsc = null;
-  }
-}
-
-function playSound(typeIndex){
-  switch(typeIndex){
-    case 1: startOsc(400,"sine"); break;
-    case 2: startOsc(600,"triangle"); break;
-    case 3: startOsc(800,"square"); break;
-    case 4: startOsc(1200,"sine"); break;
-    case 5: startOsc(250,"triangle"); break;
-    case 6: startOsc(1500,"sine"); break;
-    case 7: startOsc(1800,"square"); break;
-    case 8: startOsc(300,"sine"); break;
-    case 9: startOsc(1000,"triangle"); break;
-    case 10: startOsc(2200,"sine"); break;
-    case 11: startOsc(90,"square"); break;
-    case 12: startOsc(1300,"sine"); break;
-    case 13: startOsc(700,"triangle"); break;
-    case 14: startOsc(1600,"square"); break;
-    case 15: startOsc(940,"sine"); break;
-    case 16: startOsc(500,"triangle"); break;
-  }
-}
-
-const grid = document.getElementById("soundGrid");
-
-for(let i=1;i<=16;i++){
-  const b = document.createElement("button");
-  b.className="btn";
-  b.textContent="Sound "+i;
-  b.addEventListener("mousedown",()=>playSound(i));
-  b.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    playSound(i);
-  },{passive:false});
-  b.addEventListener("mouseup",stopOsc);
-  b.addEventListener("mouseleave",stopOsc);
-  b.addEventListener("touchend",stopOsc);
-  grid.appendChild(b);
-}
-
-const censorBtn=document.getElementById("censorBtn");
-const censorSound=document.getElementById("censorSound");
-
-censorBtn.addEventListener("mousedown",()=>{
-  censorSound.currentTime=0;
-  censorSound.play();
-});
-censorBtn.addEventListener("touchstart",e=>{
+/* accept drops on canvas */
+canvas.addEventListener("dragover", e=>{ e.preventDefault(); });
+canvas.addEventListener("drop", e=>{
   e.preventDefault();
-  censorSound.currentTime=0;
-  censorSound.play();
-},{passive:false});
-
-const tabSounds=document.getElementById("tabSounds");
-const tabEffects=document.getElementById("tabEffects");
-const pageSounds=document.getElementById("pageSounds");
-const pageEffects=document.getElementById("pageEffects");
-
-tabSounds.onclick=()=>{
-  tabSounds.classList.add("active");
-  tabEffects.classList.remove("active");
-  pageSounds.classList.add("active");
-  pageEffects.classList.remove("active");
-};
-tabEffects.onclick=()=>{
-  tabEffects.classList.add("active");
-  tabSounds.classList.remove("active");
-  pageEffects.classList.add("active");
-  pageSounds.classList.remove("active");
-};
-
-document.addEventListener("click",function once(){
-  if(audioCtx.state==="suspended") audioCtx.resume();
-  document.removeEventListener("click",once);
+  let data = e.dataTransfer.getData("text/plain");
+  try{ data = JSON.parse(data); }catch(err){ return; }
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  addNodeToCanvas(data, x-80, y-28);
 });
-</script>
 
+/* ---------- Node creation and DOM ---------- */
+function addNodeToCanvas(def, x=60, y=60){
+  const id = newId();
+  const node = {id,x,y,label:def.label||"Step",type:def.kind||"sound",soundIndex:def.index||1};
+  nodes[id]=node;
+  renderNode(node);
+  updateLinksSVG();
+  updateRootCount();
+  saveAuto();
+  return id;
+}
+
+function renderNode(node){
+  const el = document.createElement("div");
+  el.className="node";
+  el.id=node.id;
+  el.style.left = node.x + "px";
+  el.style.top = node.y + "px";
+
+  // title row
+  const title = document.createElement("div"); title.className="title"; title.textContent=node.label;
+  // connector
+  const conn = document.createElement("div"); conn.className="connector"; conn.title="Click to link from this node";
+  conn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    startLinking(node.id);
+  });
+
+  // controls row
+  const controls = document.createElement("div"); controls.className="controls";
+  const play = document.createElement("button"); play.className="play"; play.textContent="Play";
+  play.addEventListener("mousedown", e=>{ e.stopPropagation(); previewPlay(node.id); });
+  play.addEventListener("mouseup", e=>{ e.stopPropagation(); stopNode(node.id); });
+  play.addEventListener("mouseleave", e=>{ e.stopPropagation(); stopNode(node.id); });
+  play.addEventListener("touchstart", e=>{ e.stopPropagation(); previewPlay(node.id); },{passive:false});
+  play.addEventListener("touchend", e=>{ e.stopPropagation(); stopNode(node.id); },{passive:false});
+
+  const hold = document.createElement("button"); hold.className="hold"; hold.textContent="Hold";
+  hold.addEventListener("mousedown", e=>{ e.stopPropagation(); holdPlay(node.id); });
+  hold.addEventListener("mouseup", e=>{ e.stopPropagation(); stopNode(node.id); });
+  hold.addEventListener("mouseleave", e=>{ e.stopPropagation(); stopNode(node.id); });
+  hold.addEventListener("touchstart", e=>{ e.stopPropagation(); holdPlay(node.id); },{passive:false});
+  hold.addEventListener("touchend", e=>{ e.stopPropagation(); stopNode(node.id); },{passive:false});
+
+  const del = document.createElement("button"); del.className="del"; del.textContent="Del";
+  del.addEventListener("click", e=>{ e.stopPropagation(); removeNode(node.id); });
+
+  controls.appendChild(play); controls.appendChild(hold); controls.appendChild(del);
+
+  // label edit
+  const labelIn = document.createElement("input");
+  labelIn.value = node.label;
+  labelIn.style.width = "100%";
+  labelIn.addEventListener("input", ()=>{ node.label = labelIn.value; title.textContent = node.label; saveAuto(); });
+
+  // assemble
+  const topRow = document.createElement("div");
+  topRow.style.display="flex"; topRow.style.justifyContent="space-between"; topRow.style.alignItems="center";
+  topRow.appendChild(title); topRow.appendChild(conn);
+
+  el.appendChild(topRow);
+  el.appendChild(labelIn);
+  el.appendChild(controls);
+
+  // mouse drag
+  el.addEventListener("pointerdown", e=>{
+    if(e.target === conn) return; // connector click handled separately
+    el.setPointerCapture(e.pointerId);
+    dragState = {id:node.id, sx:e.clientX, sy:e.clientY, ox:node.x, oy:node.y};
+  });
+
+  el.addEventListener("pointermove", e=>{
+    if(!dragState || dragState.id !== node.id) return;
+    const dx = e.clientX - dragState.sx;
+    const dy = e.clientY - dragState.sy;
+    node.x = Math.max(0, dragState.ox + dx);
+    node.y = Math.max(0, dragState.oy + dy);
+    el.style.left = node.x + "px";
+    el.style.top = node.y + "px";
+    updateLinksSVG();
+  });
+
+  el.addEventListener("pointerup", e=>{
+    if(!dragState) return;
+    el.releasePointerCapture(e.pointerId);
+    dragState = null;
+    saveAuto();
+  });
+
+  // selection
+  el.addEventListener("click", e=>{
+    e.stopPropagation();
+    selectNode(node.id);
+  });
+
+  // context menu / double-click to convert type (sound/wait)
+  el.addEventListener("dblclick", e=>{
+    e.stopPropagation();
+    // toggle to wait node: wait length input
+    convertToWait(node.id);
+  });
+
+  canvas.appendChild(el);
+  refreshNodeDOM(node.id);
+}
+
+/* remove node and connected links */
+function removeNode(id){
+  // remove DOM
+  const el = document.getElementById(id);
+  if(el) el.remove();
+  // remove links referencing it
+  links = links.filter(l=>l.from !== id && l.to !== id);
+  delete nodes[id];
+  stopNode(id);
+  updateLinksSVG();
+  clearSelection();
+  saveAuto();
+  updateRootCount();
+}
+
+/* convert node to wait step (type wait implies waitDuration ms) */
+function convertToWait(id){
+  const node = nodes[id];
+  if(!node) return;
+  node.type = (node.type === "wait") ? "sound" : "wait";
+  if(node.type === "wait") node.wait = node.wait || 300;
+  else node.soundIndex = node.soundIndex || 1;
+  refreshNodeDOM(id);
+  saveAuto();
+}
+
+/* update DOM content for node (e.g. type-specific UI) */
+function refreshNodeDOM(id){
+  const node = nodes[id];
+  const el = document.getElementById(id);
+  if(!node || !el) return;
+  // show label in title already handled; add extra UI if wait
+  // show type badge
+  // small visual change for wait type
+  if(node.type === "wait"){
+    el.style.background = "linear-gradient(180deg,#fff,#eef2ff)";
+    el.style.color = "#0b1220";
+  } else {
+    el.style.background = "var(--card)";
+    el.style.color = "var(--card-text)";
+  }
+}
+
+/* ---------- linking logic ---------- */
+function startLinking(fromId){
+  linkingFrom = fromId;
+  // visual cue: highlight
+  highlightNode(fromId);
+  selectedInfo.innerHTML = '<div class=small>Linking from '+(nodes[fromId]?.label || fromId)+'. Click connector on target node to connect. Click empty space to cancel.</div>';
+}
+
+/* finish linking to target */
+function finishLinking(toId){
+  if(!linkingFrom) return;
+  if(linkingFrom === toId){ linkingFrom = null; updateSelectedInfo(); return; }
+  // prevent duplicate
+  if(links.some(l=>l.from===linkingFrom && l.to===toId)){ linkingFrom=null; updateSelectedInfo(); return; }
+  links.push({from:linkingFrom,to:toId});
+  linkingFrom = null;
+  updateLinksSVG();
+  updateSelectedInfo();
+  saveAuto();
+  updateRootCount();
+}
+
+/* unlink utility */
+function removeLink(from,to){
+  links = links.filter(l=> !(l.from===from && l.to===to) );
+  updateLinksSVG(); saveAuto();
+  updateRootCount();
+}
+
+/* highlight */
+function highlightNode(id){
+  // simple border flash
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.boxShadow = "0 14px 30px rgba(79,70,229,.2)";
+  setTimeout(()=>{ if(el) el.style.boxShadow = "0 10px 30px rgba(2,6,23,.5)"; },400);
+}
+
+/* canvas click cancels linking & clears selection */
+canvas.addEventListener("click", e=>{
+  linkingFrom = null;
+  clearSelection();
+  updateSelectedInfo();
+});
+
+/* when connector on target clicked, call finishLinking */
+canvas.addEventListener("click", e=>{
+  // handled inside node render by connector element click
+});
+
+/* ---------- links SVG rendering ---------- */
+function updateLinksSVG(){
+  // ensure svg covers canvas scroll area
+  linksSVG.innerHTML = "";
+  const rect = canvas.getBoundingClientRect();
+  // for each link draw a path from center-bottom of from node to center-top of to node
+  links.forEach((l, idx)=>{
+    const a = nodes[l.from], b = nodes[l.to];
+    if(!a||!b) return;
+    const ax = a.x + 80; const ay = a.y + 40;
+    const bx = b.x + 80; const by = b.y + 20;
+    // straight line with slight curve
+    const dx = Math.abs(bx-ax);
+    const hx = Math.min(120, dx/2);
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", `M ${ax} ${ay} C ${ax+hx} ${ay} ${bx-hx} ${by} ${bx} ${by}`);
+    path.setAttribute("stroke", "rgba(79,70,229,0.9)");
+    path.setAttribute("stroke-width","3");
+    path.setAttribute("fill","none");
+    path.setAttribute("marker-end","url(#arrow)");
+    path.style.pointerEvents = "auto";
+    // right-click on path to remove link
+    path.addEventListener("contextmenu", ev=>{
+      ev.preventDefault();
+      if(confirm("Remove link?")) removeLink(l.from, l.to);
+    });
+    linksSVG.appendChild(path);
+  });
+
+  // add arrow marker defs
+  const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+  const marker = document.createElementNS("http://www.w3.org/2000/svg","marker");
+  marker.setAttribute("id","arrow"); marker.setAttribute("markerWidth","10"); marker.setAttribute("markerHeight","10");
+  marker.setAttribute("refX","8"); marker.setAttribute("refY","5"); marker.setAttribute("orient","auto");
+  const arrow = document.createElementNS("http://www.w3.org/2000/svg","path");
+  arrow.setAttribute("d","M 0 0 L 10 5 L 0 10 z"); arrow.setAttribute("fill","rgba(79,70,229,0.9)");
+  marker.appendChild(arrow); defs.appendChild(marker); linksSVG.appendChild(defs);
+}
+
+/* ---------- selection inspector ---------- */
+function selectNode(id){
+  selectedNodeId = id;
+  updateSelectedInfo();
+}
+function clearSelection(){ selectedNodeId = null; updateSelectedInfo(); }
+
+function updateSelectedInfo(){
+  if(linkingFrom){
+    selectedInfo.innerHTML = '<div class=small>Linking mode active. Click a node connector to finish or click canvas to cancel.</div>';
+    return;
+  }
+  if(!selectedNodeId){
+    selectedInfo.innerHTML = '<div class=small>No node selected</div>';
+    return;
+  }
+  const n = nodes[selectedNodeId];
+  if(!n){ selectedInfo.innerHTML = '<div class=small>No node selected</div>'; return; }
+  selectedInfo.innerHTML = '';
+  const title = document.createElement("div"); title.textContent = n.label; title.style.fontWeight="700";
+  const typeRow = document.createElement("div"); typeRow.className="row";
+  typeRow.innerHTML = '<div class=small>Type</div>';
+  const typeSel = document.createElement("select");
+  const optS = document.createElement("option"); optS.value="sound"; optS.textContent="sound";
+  const optW = document.createElement("option"); optW.value="wait"; optW.textContent="wait";
+  typeSel.appendChild(optS); typeSel.appendChild(optW); typeSel.value = n.type || "sound";
+  typeSel.addEventListener("change", ()=>{ n.type = typeSel.value; refreshNodeDOM(n.id); saveAuto(); });
+  typeRow.appendChild(typeSel);
+
+  const labelRow = document.createElement("div"); labelRow.className="row";
+  const labIn = document.createElement("input"); labIn.value = n.label; labIn.style.flex="1";
+  labIn.addEventListener("input", ()=>{ n.label = labIn.value; const el = document.getElementById(n.id); if(el) el.querySelector(".title").textContent = n.label; saveAuto(); });
+  labelRow.appendChild(labIn);
+
+  selectedInfo.appendChild(title); selectedInfo.appendChild(typeRow); selectedInfo.appendChild(labelRow);
+
+  if(n.type === "sound"){
+    const soundRow = document.createElement("div"); soundRow.className="row";
+    const sel = document.createElement("select");
+    names.forEach((nm,idx)=>{ const o=document.createElement("option"); o.value = idx+1; o.textContent = nm; sel.appendChild(o) });
+    sel.value = n.soundIndex || 1;
+    sel.addEventListener("change", ()=>{ n.soundIndex = parseInt(sel.value); saveAuto(); });
+    soundRow.appendChild(sel);
+    selectedInfo.appendChild(soundRow);
+  }else{
+    const waitRow = document.createElement("div"); waitRow.className="row";
+    waitRow.innerHTML = '<div class=small>Wait ms</div>';
+    const wIn = document.createElement("input"); wIn.type="number"; wIn.value = n.wait || 300; wIn.style.flex="1";
+    wIn.addEventListener("change", ()=>{ n.wait = parseInt(wIn.value); saveAuto(); });
+    waitRow.appendChild(wIn);
+    selectedInfo.appendChild(waitRow);
+  }
+
+  // show linked targets & sources
+  const inRow = document.createElement("div"); inRow.className="small"; inRow.textContent = "Incoming: ";
+  const incoming = links.filter(l=>l.to===n.id).map(l=>l.from);
+  incoming.forEach(id=>{ const d = document.createElement("div"); d.textContent = nodes[id]?.label || id; d.style.fontSize="13px"; selectedInfo.appendChild(d); });
+
+  const outRow = document.createElement("div"); outRow.className="small"; outRow.textContent = "Outgoing: ";
+  const outgoing = links.filter(l=>l.from===n.id).map(l=>l.to);
+  outgoing.forEach(id=>{
+    const d = document.createElement("div"); d.textContent = nodes[id]?.label || id; d.style.fontSize="13px";
+    const rem = document.createElement("button"); rem.textContent="unlink"; rem.style.marginLeft="8px"; rem.addEventListener("click", ()=>{ removeLink(n.id,id); updateSelectedInfo(); } );
+    d.appendChild(rem); selectedInfo.appendChild(d);
+  });
+}
+
+/* ---------- play / audio ---------- */
+function startOscForNode(nodeId){
+  const n = nodes[nodeId];
+  if(!n) return;
+  if(n.type === "wait") return;
+  const idx = n.soundIndex || 1;
+  const def = soundDefs[idx];
+  if(!def) return;
+  // create oscillator
+  const [freq, type] = def;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = 0.9;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  liveOscs[nodeId] = {osc:o,gain:g};
+}
+
+function stopNode(nodeId){
+  const o = liveOscs[nodeId];
+  if(o){
+    try{ o.osc.stop(); }catch(e){}
+    try{ o.osc.disconnect(); o.gain.disconnect(); }catch(e){}
+    delete liveOscs[nodeId];
+  }
+}
+
+function previewPlay(nodeId){
+  startOscForNode(nodeId);
+  // stop after 300ms if not hold
+  setTimeout(()=>{ stopNode(nodeId); }, 300);
+}
+
+function holdPlay(nodeId){
+  startOscForNode(nodeId);
+}
+
+function stopAllSounds(){
+  Object.keys(liveOscs).forEach(k=>stopNode(k));
+  // stop censor audio if playing
+  const c = document.getElementById("censorAudio");
+  if(c && !c.paused){ c.pause(); c.currentTime = 0; }
+}
+
+/* Play graph traversal
+   start from nodes that have no incoming links. For each root, perform DFS or follow first outgoing link.
+   To keep deterministic behavior, follow first outgoing link only.
+*/
+async function playGraph(){
+  // unlock audio
+  if(audioCtx.state === "suspended") await audioCtx.resume();
+
+  // find roots (nodes with no incoming)
+  const nodesArr = Object.values(nodes);
+  const nodeIds = nodesArr.map(n=>n.id);
+  const hasIn = new Set(links.map(l=>l.to));
+  const roots = nodeIds.filter(id=>!hasIn.has(id));
+  if(roots.length === 0){
+    // fallback: all nodes
+    roots.push(...nodeIds);
+  }
+  const visited = new Set();
+  const maxSteps = 400; // safety
+  let steps = 0;
+
+  // follow links depth-first but always take the first outgoing target
+  for(const r of roots){
+    let cur = r;
+    while(cur && steps < maxSteps){
+      steps++;
+      const n = nodes[cur];
+      if(!n) break;
+      // play step
+      if(n.type === "wait"){
+        const waitMs = n.wait || 300;
+        await sleep(waitMs);
+      } else {
+        startOscForNode(cur);
+        await sleep(250);
+        stopNode(cur);
+      }
+      visited.add(cur);
+      // find outgoing
+      const outs = links.filter(l=>l.from===cur).map(l=>l.to);
+      cur = outs.length ? outs[0] : null;
+      if(visited.has(cur)) break;
+    }
+  }
+}
+
+function sleep(ms){ return new Promise(res=>setTimeout(res, ms)); }
+
+/* ---------- utilities / UI actions ---------- */
+document.getElementById("addNode").addEventListener("click", ()=>addNodeToCanvas({kind:"sound",index:1,label:"New Step"}, 60 + Math.random()*400, 60 + Math.random()*200));
+document.getElementById("playGraph").addEventListener("click", ()=>playGraph());
+document.getElementById("stopAll").addEventListener("click", ()=>stopAllSounds());
+document.getElementById("clearAll").addEventListener("click", ()=>{
+  if(!confirm("Clear all nodes and links?")) return;
+  Object.keys(nodes).forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+  nodes = {}; links = []; nodeCounter = 0;
+  updateLinksSVG(); saveAuto(); updateRootCount();
+});
+document.getElementById("centerAll").addEventListener("click", ()=>{
+  canvas.scrollTop = 0; canvas.scrollLeft = 0;
+});
+document.getElementById("saveLayout").addEventListener("click", saveToLocal);
+document.getElementById("loadLayout").addEventListener("click", loadFromLocal);
+document.getElementById("exportBtn").addEventListener("click", ()=>{ const data = exportJSON(); downloadData("layout.json", data); });
+document.getElementById("importBtn").addEventListener("click", ()=>{ loadJSONFromPrompt(); });
+
+/* save/load / export */
+function exportJSON(){
+  return JSON.stringify({nodes,links,nodeCounter},null,2);
+}
+function downloadData(filename, txt){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt],{type:"application/json"}));
+  a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
+function loadJSONFromPrompt(){
+  const txt = prompt("Paste layout JSON");
+  if(!txt) return;
+  try{
+    const data = JSON.parse(txt);
+    loadFromData(data);
+  }catch(e){ alert("Invalid JSON"); }
+}
+function saveToLocal(){ localStorage.setItem("node_layout_v1", exportJSON()); alert("Saved"); }
+function loadFromLocal(){ const s = localStorage.getItem("node_layout_v1"); if(!s){ alert("No saved layout"); return;} loadFromData(JSON.parse(s)); }
+function loadFromData(data){
+  // clear canvas
+  Object.keys(nodes).forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+  nodes = {}; links = []; nodeCounter = data.nodeCounter || 0;
+  // add nodes
+  if(data.nodes){
+    Object.values(data.nodes).forEach(n=>{
+      nodes[n.id] = n;
+      renderNode(n);
+    });
+  }
+  if(data.links) links = data.links.slice();
+  updateLinksSVG(); updateRootCount(); saveAuto();
+}
+
+/* autosave on changes */
+function saveAuto(){
+  // keep a small autosave for convenience
+  try{ localStorage.setItem("node_auto_v1", exportJSON()); }catch(e){}
+}
+
+/* load auto at start if exists */
+(function loadAutoAtStart(){
+  const s = localStorage.getItem("node_auto_v1");
+  if(!s) return;
+  try{ const d = JSON.parse(s); loadFromData(d); }catch(e){}
+})();
+
+/* simple selection clearing when clicking outside */
+document.body.addEventListener("click", e=>{ if(!e.target.closest(".node")){ selectedNodeId = null; updateSelectedInfo(); linkingFrom = null; } });
+
+/* update root counter */
+function updateRootCount(){
+  const hasIn = new Set(links.map(l=>l.to));
+  const nodesArr = Object.values(nodes);
+  const roots = nodesArr.filter(n=>!hasIn.has(n.id));
+  rootCount.textContent = `Roots: ${roots.length} / Nodes: ${nodesArr.length}`;
+}
+
+/* ---------- tab behavior + censor effect ---------- */
+const tabSounds = document.getElementById("tabSounds");
+const tabEffects = document.getElementById("tabEffects");
+const tabMaker = document.getElementById("tabMaker");
+const paletteEl = document.querySelector(".palette");
+const inspectorEl = document.querySelector(".inspector");
+const canvasWrap = document.querySelector(".canvas-wrap");
+
+function activateTab(t){
+  tabSounds.classList.remove("active"); tabEffects.classList.remove("active"); tabMaker.classList.remove("active");
+  paletteEl.style.display = "none"; inspectorEl.style.display = "none"; canvasWrap.style.display = "none";
+  if(t==="sounds"){ tabSounds.classList.add("active"); paletteEl.style.display = "block"; canvasWrap.style.display = "block"; }
+  if(t==="effects"){ tabEffects.classList.add("active"); inspectorEl.style.display="block"; canvasWrap.style.display="block"; }
+  if(t==="maker"){ tabMaker.classList.add("active"); paletteEl.style.display="block"; inspectorEl.style.display="block"; canvasWrap.style.display="block"; }
+}
+tabSounds.addEventListener("click", ()=>activateTab("sounds"));
+tabEffects.addEventListener("click", ()=>activateTab("effects"));
+tabMaker.addEventListener("click", ()=>activateTab("maker"));
+
+activateTab("maker"); // default
+
+/* censor button in inspector/effects */
+const censorAudio = document.getElementById("censorAudio");
+// create a corner censor button in effects tab area
+const censorCorner = document.createElement("div");
+censorCorner.style.position = "fixed";
+censorCorner.style.right = "20px";
+censorCorner.style.bottom = "20px";
+censorCorner.style.zIndex = 1300;
+const censorBtn = document.createElement("button");
+censorBtn.textContent = "Censor";
+censorBtn.style.padding = "12px 16px"; censorBtn.style.borderRadius="12px"; censorBtn.style.background="var(--accent2)";
+censorBtn.style.border="0"; censorBtn.style.color="white"; censorBtn.style.fontWeight="700";
+censorBtn.addEventListener("click", ()=>{ censorAudio.currentTime = 0; censorAudio.play(); });
+document.body.appendChild(censorCorner); censorCorner.appendChild(censorBtn);
+
+/* ---------- play by graph traversal when clicking node connectors: allow link finish by clicking connector on target too ---------- */
+/* we already implemented startLinking and finishLinking via connector clicks when creating nodes; need to ensure connecting target connector finishes linking */
+document.addEventListener("click", function globalClick(ev){
+  // when clicking a connector element inside a node, finish linking if linkingFrom is set
+  const target = ev.target;
+  if(target.classList && target.classList.contains("connector")){
+    // find node id parent
+    const parent = target.closest(".node");
+    if(parent && linkingFrom){
+      finishLinking(parent.id);
+      ev.stopPropagation();
+    }
+  }
+});
+
+/* ---------- play by following link from a specific node (right click) ---------- */
+canvas.addEventListener("contextmenu", ev=>{
+  // right click on node => play from that node
+  const nEl = ev.target.closest(".node");
+  if(nEl){
+    ev.preventDefault();
+    playFromNode(nEl.id);
+  }
+});
+async function playFromNode(startId){
+  if(audioCtx.state === "suspended") await audioCtx.resume();
+  const visited = new Set();
+  let cur = startId;
+  const maxSteps = 400; let steps = 0;
+  while(cur && steps < maxSteps){
+    steps++;
+    const n = nodes[cur];
+    if(!n) break;
+    if(n.type === "wait"){
+      await sleep(n.wait || 300);
+    } else {
+      startOscForNode(cur);
+      await sleep(250);
+      stopNode(cur);
+    }
+    visited.add(cur);
+    const outs = links.filter(l=>l.from===cur).map(l=>l.to);
+    cur = outs.length ? outs[0] : null;
+    if(visited.has(cur)) break;
+  }
+}
+
+/* ---------- audio unlock on first gesture ---------- */
+document.addEventListener("click", function once(){
+  if(audioCtx.state === "suspended") audioCtx.resume();
+  document.removeEventListener("click", once);
+});
+
+/* ---------- auto-refresh svg on resize/scroll ---------- */
+window.addEventListener("resize", updateLinksSVG);
+canvas.addEventListener("scroll", updateLinksSVG);
+
+/* ---------- initial UI state ---------- */
+updateLinksSVG();
+updateRootCount();
+updateSelectedInfo();
+
+</script>
 </body>
 </html>
