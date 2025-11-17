@@ -1,126 +1,162 @@
 <!doctype html>
-<html lang="en">
+<html lang=en>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Custom Beep Buttons</title>
-  <style>
-    :root{--bg:#0f172a;--btn:#ef4444;--btn-shadow:rgba(239,68,68,.25)}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    body{display:grid;place-items:center;background:linear-gradient(180deg,#071029 0%, #0f172a 100%);color:#fff}
-    .center{text-align:center}
-    .beep-btn{
-      --size:120px;
-      width:var(--size);height:var(--size);
-      border-radius:50%;border:0;outline:0;
-      background:linear-gradient(180deg,var(--btn) 0%,#dc2626 100%);
-      box-shadow:0 10px 30px var(--btn-shadow),0 2px 0 rgba(0,0,0,.25) inset;
-      font-size:.9rem;font-weight:700;color:white;cursor:pointer;
-      display:inline-grid;place-items:center;user-select:none;touch-action:manipulation;
-      margin:10px;
-      transition:transform .08s ease,box-shadow .08s ease,filter .08s ease;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .beep-btn:active{transform:translateY(3px) scale(.995);filter:brightness(.96);}
-    .beep-btn[aria-pressed="true"]{box-shadow:0 6px 18px rgba(239,68,68,.35);transform:scale(.99);}
-    .hint{margin-top:18px;opacity:.85;font-size:.9rem}
-    footer{position:fixed;left:12px;bottom:8px;font-size:.78rem;opacity:.65}
-  </style>
+<meta charset=utf-8 />
+<meta name=viewport content=width=device-width,initial-scale=1 />
+<title>Beep Panel</title>
+<style>
+:root{
+  --bg:#0f172a;
+  --btn:#ef4444;
+  --btn2:#3b82f6;
+  --btn3:#10b981;
+  --btn4:#f59e0b;
+  --btn5:#8b5cf6;
+  --btn6:#ec4899;
+}
+html,body{
+  height:100%;
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial;
+}
+body{
+  display:grid;
+  place-items:center;
+  background:linear-gradient(180deg,#071029 0%, #0f172a 100%);
+  color:#fff;
+}
+.center{
+  text-align:center;
+}
+.panel{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:16px;
+  max-width:600px;
+}
+.beep-btn{
+  --size:130px;
+  width:var(--size);
+  height:var(--size);
+  border-radius:20px;
+  border:0;
+  outline:0;
+  background:#ef4444;
+  font-size:1rem;
+  font-weight:700;
+  color:white;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  user-select:none;
+  touch-action:manipulation;
+  transition:transform .06s, filter .06s;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+.beep-btn:active{
+  transform:scale(.93);
+  filter:brightness(.92);
+}
+footer{
+  position:fixed;
+  left:12px;
+  bottom:8px;
+  font-size:.78rem;
+  opacity:.65;
+}
+</style>
 </head>
+
 <body>
-  <main class="center">
-    <button id="curseBeep" class="beep-btn" aria-pressed="false" aria-label="Censor beep">Censor Beep</button>
-    <button id="simpleBeep" class="beep-btn" aria-pressed="false" aria-label="Simple beep">Beep</button>
-    <button id="whistle" class="beep-btn" aria-pressed="false" aria-label="Whistle sound">Whistle</button>
-    <div class="hint">Click or press <kbd>Space</kbd> / <kbd>Enter</kbd></div>
-  </main>
-  <footer>Single-file demo — copy to GitHub Pages to host</footer>
+<main class=center>
+  <div class=panel>
+    <button id=curseBeep class=beep-btn style=background:var(--btn)>Censor</button>
+    <button id=simpleBeep class=beep-btn style=background:var(--btn2)>Beep</button>
+    <button id=whistle class=beep-btn style=background:var(--btn3)>Whistle</button>
+    <button id=laser class=beep-btn style=background:var(--btn4)>Laser</button>
+    <button id=errorTone class=beep-btn style=background:var(--btn5)>Error</button>
+    <button id=clickTone class=beep-btn style=background:var(--btn6)>Click</button>
+  </div>
+</main>
 
-  <!-- Custom audio file for curse beep -->
-  <audio id="curseAudio" src="https://www.soundjay.com/button/beep-07.mp3" preload="auto"></audio>
+<footer>Beep Panel Demo</footer>
 
+<audio id=curseAudio src=https://www.soundjay.com/button/beep-07.mp3 preload=auto></audio>
 
-  <script>
-    (function(){
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      let playing = {};
+<script>
+(function(){
+  const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const curseAudio = document.getElementById("curseAudio");
 
-      const curseAudio = document.getElementById('curseAudio');
+  function playCustomAudio(a){
+    a.currentTime=0;
+    a.play();
+  }
 
-      function playCustomAudio(audio){
-        if(!audio) return;
-        audio.currentTime = 0;
-        audio.play();
-      }
+  function osc(freqStart,freqEnd,type,duration){
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
 
-      function playOsc(frequencies, duration=0.2){
-        if(!audioCtx) return;
-        const now = audioCtx.currentTime;
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.setValueAtTime(0.0001, now);
-        gainNode.gain.exponentialRampToValueAtTime(1, now+0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, now+duration);
-        gainNode.connect(audioCtx.destination);
+    o.type = type;
+    o.frequency.setValueAtTime(freqStart,now);
+    o.frequency.linearRampToValueAtTime(freqEnd,now+duration);
 
-        frequencies.forEach(freq => {
-          const osc = audioCtx.createOscillator();
-          osc.frequency.setValueAtTime(freq.start, now);
-          osc.frequency.exponentialRampToValueAtTime(freq.end, now+duration);
-          osc.type = freq.type || 'sine';
-          osc.connect(gainNode);
-          osc.start(now);
-          osc.stop(now+duration);
-        });
-      }
+    g.gain.setValueAtTime(1,now);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+duration);
 
-      function trigger(id){
-        if(playing[id]) return;
-        playing[id]=true;
-        document.getElementById(id).setAttribute('aria-pressed','true');
+    o.connect(g);
+    g.connect(audioCtx.destination);
 
-        switch(id){
-          case 'curseBeep': // play custom audio
-            playCustomAudio(curseAudio);
-            break;
-          case 'simpleBeep': // plain beep
-            playOsc([{start:800,end:800,type:'sine'}],0.2);
-            break;
-          case 'whistle': // whistle sweep
-            playOsc([{start:1500,end:2500,type:'sine'}],0.5);
-            break;
-        }
+    o.start(now);
+    o.stop(now+duration);
+  }
 
-        setTimeout(()=>{ 
-          playing[id]=false;
-          document.getElementById(id).setAttribute('aria-pressed','false');
-        },600);
-      }
+  function trigger(id){
+    switch(id){
+      case "curseBeep":
+        playCustomAudio(curseAudio);
+        break;
+      case "simpleBeep":
+        osc(800,800,"sine",0.15);
+        break;
+      case "whistle":
+        osc(1500,2600,"sine",0.4);
+        break;
+      case "laser":
+        osc(2200,200,"sine",0.25);
+        break;
+      case "errorTone":
+        osc(200,50,"square",0.25);
+        break;
+      case "clickTone":
+        osc(3000,500,"triangle",0.07);
+        break;
+    }
+  }
 
-      // Attach events
-      ['curseBeep','simpleBeep','whistle'].forEach(id=>{
-        const btn = document.getElementById(id);
-        btn.addEventListener('click',()=>trigger(id));
-        btn.addEventListener('touchstart',e=>{e.preventDefault(); trigger(id);},{passive:false});
-      });
+  const ids=[
+    "curseBeep","simpleBeep","whistle",
+    "laser","errorTone","clickTone"
+  ];
 
-      // Keyboard shortcut triggers curse beep
-      window.addEventListener('keydown', e=>{
-        if(e.code==='Space'||e.code==='Enter'){
-          if(e.target===document.body) e.preventDefault();
-          trigger('curseBeep');
-        }
-      });
+  ids.forEach(id=>{
+    const b=document.getElementById(id);
+    b.addEventListener("click",()=>trigger(id));
+    b.addEventListener("touchstart",e=>{
+      e.preventDefault();
+      trigger(id);
+    },{passive:false});
+  });
 
-      // Resume AudioContext on first gesture
-      document.addEventListener('click', function once(){
-        if(audioCtx.state==='suspended') audioCtx.resume();
-        document.removeEventListener('click', once);
-      });
-    })();
-  </script>
+  document.addEventListener("click",function once(){
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    document.removeEventListener("click",once);
+  });
+})();
+</script>
+
 </body>
 </html>
-
-
-
-
